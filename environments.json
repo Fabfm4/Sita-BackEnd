@@ -1,0 +1,11 @@
+{
+    "vagrant": {
+        "user": "vagrant",
+        "hosts": ["192.168.33.2"],
+        "site_dir": "/home/vagrant/src/",
+        "django_settings": "sita.settings.local",
+        "command_prefixes": [
+            "/home/vagrant/env/bin/activate"
+        ]
+    }
+}
