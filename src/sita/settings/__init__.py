@@ -39,6 +39,7 @@ INSTALLED_APPS = (
     'django_extensions',
     # Models
     'sita.users',
+    'sita.cards',
 )
 
 MIDDLEWARE_CLASSES = (
