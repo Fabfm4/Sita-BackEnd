@@ -24,6 +24,7 @@ SECRET_KEY = '*+a9uub1)_lc7)fxhba4$%g2#&shao3o))4=_t&k7dyrr3)l47'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+ALLOWED_HOSTS = ['sita.local']
 
 
 # Application definition
@@ -36,6 +37,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
+    # Models
+    'sita.users',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -111,3 +114,4 @@ STATIC_ROOT = os.path.realpath(
     os.path.join(BASE_DIR, '..', '..', 'media', 'assets')
 )
 
+AUTH_USER_MODEL = 'users.User'
