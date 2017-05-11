@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     # Models
     'sita.users',
     'sita.cards',
+    'sita.subscriptions',
 )
 
 MIDDLEWARE_CLASSES = (
