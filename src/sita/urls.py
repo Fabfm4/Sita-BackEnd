@@ -19,6 +19,13 @@ from django.conf import settings
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(
+        r'^api/',
+        include(
+            'sita.api.urls',
+            namespace='api'
+        )
+    ),
 ]
 
 if settings.DEBUG:
