@@ -44,6 +44,7 @@ INSTALLED_APPS = (
     'sita.patients',
     'sita.payments',
     'sita.appointments',
+    'sita.notes',
 )
 
 MIDDLEWARE_CLASSES = (
