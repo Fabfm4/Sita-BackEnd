@@ -46,6 +46,7 @@ INSTALLED_APPS = (
     'sita.payments',
     'sita.appointments',
     'sita.notes',
+    'sita.authentication',
     # Third party apps.
     'rest_framework_swagger',
     'rest_framework',
@@ -94,6 +95,7 @@ WSGI_APPLICATION = 'sita.wsgi.application'
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
@@ -131,9 +133,6 @@ JWT_AUTH = {
     ),
     'JWT_PAYLOAD_GET_USER_ID_HANDLER': (
         'rest_framework_jwt.utils.jwt_get_user_id_from_payload_handler'
-    ),
-    'JWT_RESPONSE_PAYLOAD_HANDLER': (
-        'rest_framework_jwt.utils.jwt_response_payload_handler'
     ),
     'VJWT_ALGORITHM': 'HS256',
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1800),
