@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from calendar import timegm
 from datetime import datetime
-from sita.users.serializers import UserSerializer
+from sita.users.serializers import UserSerializerModel
 
 from rest_framework_jwt.settings import api_settings
 
@@ -26,5 +26,5 @@ def jwt_response_payload_handler(token, user=None, request=None):
     """Response custom from rest_framework_jwt"""
     return {
         'token': token,
-        'user': UserSerializer(user).data
+        'user': UserSerializerModel(user).data
     }

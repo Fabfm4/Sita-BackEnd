@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import User
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializerModel(serializers.ModelSerializer):
     """
     Serializer used to return the proper token, when the user was succesfully
     logged in.
