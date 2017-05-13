@@ -44,13 +44,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Create custom model User."""
 
     name = models.CharField(
-        max_length=100
-        )
+        max_length=100,
+        null=True
+    )
     first_name = models.CharField(
-        max_length=100
+        max_length=100,
+        null=True
     )
     mothers_name = models.CharField(
-        max_length=100
+        max_length=100,
+        null=True
     )
     email = models.EmailField(
         max_length=254,
@@ -75,7 +78,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True
     )
     conekta_customer = models.CharField(
-        max_length=254
+        max_length=254,
+        null=True
     )
     created_date = models.DateField(
         auto_now_add=True
@@ -89,6 +93,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     has_subscription = models.BooleanField(
         default=False
     )
+    has_subscription = models.DateField(
+        null=True
+    )
 
     objects = UserManager()
 
@@ -98,7 +105,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.get_full_name()
 
     def get_full_name(self):
-        return "{0}".format(self.name)
+        return "{0}".format(self.email)
 
     def get_short_name(self):
         return "{0}".format(self.name)

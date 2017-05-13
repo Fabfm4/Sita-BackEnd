@@ -45,18 +45,16 @@ class LoginSerializer(serializers.Serializer):
         """
         return User.objects.get(email__exact=data.get('email'))
 
-class LoginResponseSerializer(serializers.ModelSerializer):
+class LoginResponseSerializer(object):
     """
     Serializer used to return the proper token, when the user was succesfully
     logged in.
     """
-    token = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = ('token', )
+    def __init__(self):
+        pass
 
-    def get_token(self, obj):
+    def get_token(self,obj):
         """
         Create token.
         """
@@ -98,5 +96,47 @@ class RecoveryPasswordSerializer(serializers.Serializer):
 
         key = hashlib.sha1(salt + email).hexdigest()
         user.reset_pass_code = key
+        user.save()
+        return True
+
+class ResetPasswordWithCodeSerializer(serializers.Serializer):
+    """
+    Serializer for user login
+    """
+
+    password = serializers.CharField(
+        required=True
+    )
+
+    password_confim = serializers.CharField(
+        required=True
+    )
+
+    recovery_code = serializers.CharField(
+        required=True
+    )
+
+    def validate(self, data):
+        """
+        Validation email, password and active status
+        """
+        try:
+            user = User.objects.get(reset_pass_code=data.get('recovery_code'))
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Don't exits code")
+
+        if not data.get('password') == data.get('password_confim'):
+            raise serializers.ValidationError(
+                "Password is not equals to Confirm Password")
+
+        return data
+
+    def update_password(self, data):
+        """
+        Change password
+        """
+        user = User.objects.get(reset_pass_code=data.get('recovery_code'))
+        user.reset_pass_code = None
+        user.set_password(data.get('password'))
         user.save()
         return True

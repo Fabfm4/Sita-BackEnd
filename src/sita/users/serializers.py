@@ -16,4 +16,5 @@ class UserSerializer(serializers.ModelSerializer):
                 'is_active',
                 'email',
                 'has_subscription',
-                'is_superuser', )
+                'is_superuser',
+                'reset_pass_code', )

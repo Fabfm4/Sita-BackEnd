@@ -46,10 +46,8 @@ class LoginViewSet(viewsets.GenericViewSet):
         if serializer.is_valid():
 
             user = serializer.get_user(serializer.data)
-            response_serializer = serializers.LoginResponseSerializer(user)
-            #json = serializer.get_json(user,response_serializer.data)
-
-            return Response(response_serializer.data)
+            response_serializer = serializers.LoginResponseSerializer()
+            return Response(response_serializer.get_token(user))
 
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -63,7 +61,7 @@ class RecoveryPasswordViewSet(viewsets.GenericViewSet):
     @detail_route(methods=['POST'])
     def recovery_password(self, request, *args, **kwards):
         """
-        User login.
+        Recovery Password.
         ---
         omit_parameters:
             - form
@@ -93,6 +91,45 @@ class RecoveryPasswordViewSet(viewsets.GenericViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ResetPasswordWithCodeViewSet(viewsets.GenericViewSet):
+
+    permission_classes = (AllowAny, )
+    serializer_class = serializers.ResetPasswordWithCodeSerializer
+
+    @detail_route(methods=['POST'])
+    def reset_password_code(self, request, *args, **kwards):
+        """
+        Reset Password.
+        ---
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              type: ResetPasswordWithCodeSerializer
+              paramType: body
+        responseMessages:
+            - code: 400
+              message: BAD REQUEST
+            - code: 200
+              message: OK
+            - code: 500
+              message: INTERNAL SERVER ERROR
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        """
+
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.update_password(data=request.data)
+            return Response()
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 router.register(
     r'auth',
     LoginViewSet,
@@ -103,5 +140,11 @@ router.register(
     r'auth',
     RecoveryPasswordViewSet,
     base_name="recovery-password",
+    router_class=SingleObjectRouter
+)
+router.register(
+    r'auth',
+    ResetPasswordWithCodeViewSet,
+    base_name="reset-password-code",
     router_class=SingleObjectRouter
 )

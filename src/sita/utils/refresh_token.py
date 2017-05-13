@@ -24,10 +24,6 @@ def create_token(user):
 
 def jwt_response_payload_handler(token, user=None, request=None):
     """Response custom from rest_framework_jwt"""
-    print({
-        'token': token,
-        'user': UserSerializer(user).data
-    })
     return {
         'token': token,
         'user': UserSerializer(user).data
