@@ -45,19 +45,27 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     name = models.CharField(
         max_length=100,
-        null=True
+        null=True,
+        blank=True,
     )
     first_name = models.CharField(
         max_length=100,
-        null=True
+        null=True,
+        blank=True,
     )
     mothers_name = models.CharField(
         max_length=100,
-        null=True
+        null=True,
+        blank=True,
     )
     email = models.EmailField(
         max_length=254,
         unique=True
+    )
+    phone = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True
     )
     is_active = models.BooleanField(
         default=True,
@@ -79,7 +87,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     conekta_customer = models.CharField(
         max_length=254,
-        null=True
+        null=True,
+        blank=True,
     )
     created_date = models.DateField(
         auto_now_add=True
@@ -87,14 +96,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_date = models.DateField(
         auto_now=True
     )
-    logined_date = models.DateField(
-        null=True
-    )
     has_subscription = models.BooleanField(
         default=False
-    )
-    has_subscription = models.DateField(
-        null=True
     )
 
     objects = UserManager()
