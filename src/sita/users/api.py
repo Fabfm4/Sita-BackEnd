@@ -4,12 +4,15 @@ from sita.api.v1.routers import router
 from rest_framework.response import Response
 from sita.core.api.routers.single import SingleObjectRouter
 from rest_framework.permissions import IsAuthenticated
-from .serializers import UserSerializerModel
+from .serializers import (
+    UserSerializerModel, UserSerializer, UserUpdatePasswordSerializer)
 from .models import User
 from rest_framework import serializers
 from rest_framework_jwt.utils import jwt_get_user_id_from_payload_handler
 from rest_framework_jwt.settings import api_settings
 from sita.utils.refresh_token import get_user_by_token
+from django.core.urlresolvers import reverse
+from rest_framework.decorators import detail_route
 
 
 class UserViewSet(
@@ -17,10 +20,30 @@ class UserViewSet(
     base_mixins.UpdateModelMixin,
     viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, )
-    def create(self, request):
+    serializer_class = UserSerializer
+
+    def create(self, request, *args, **kwards):
         """
-        User Create.
+        User login.
         ---
+        type:
+          pk:
+            required: true
+            type: string
+          Authorization:
+            required: true
+            type: string
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              type: UserSerializer
+              paramType: body
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -34,13 +57,49 @@ class UserViewSet(
             - application/json
         """
 
-        pass
+        serializer = self.get_serializer(data=request.data)
+
+        usernameToken = User.objects.get(id=get_user_by_token(request.META))
+        if usernameToken.is_superuser:
+            if serializer.is_valid():
+                for key in request.data:
+                    if key == "name" or key == "phone" or key == "conekta_card":
+                        kwards.setdefault(key,request.data.get(key))
+                user = User.objects.create_user(
+                    email=request.data.get("email"),
+                    password=request.data.get("password"),
+                    **kwards
+                )
+                return Response(headers={"user":request.get_full_path() + "/{0}".format(user.id)},
+                    status=status.HTTP_201_CREATED)
 
 
-    def update(self, request, pk=None):
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    @detail_route(methods=['PUT'])
+    def update_password(self, request, pk=None):
         """
         User Create.
         ---
+        type:
+          pk:
+            required: true
+            type: string
+          Authorization:
+            required: true
+            type: string
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              type: serializer
+              paramType: body
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -53,6 +112,7 @@ class UserViewSet(
         produces:
             - application/json
         """
+        serializer = UserUpdatePasswordSerializer()
         pass
 
     def partial_update(self, request, pk=None):

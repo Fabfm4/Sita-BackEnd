@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 
 from sita.api.v1.routers import router
+from sita.users.models import User, Device
 from sita.authentication import serializers
 from sita.core.api.routers.single import SingleObjectRouter
 
@@ -42,8 +43,14 @@ class LoginViewSet(viewsets.GenericViewSet):
 
         if serializer.is_valid():
             user = serializer.get_user(serializer.data)
-            print(user)
             response_serializer = serializers.LoginResponseSerializer()
+            device_token=request.data.get("device_token")
+            device_os=request.data.get("device_os")
+            if device_token and device_os:
+                device = Device.objects.register(
+                    device_token=device_token,
+                    device_os=device_os,
+                    user=user)
             return Response(response_serializer.get_token(user))
 
 
@@ -128,7 +135,7 @@ class ResetPasswordWithCodeViewSet(viewsets.GenericViewSet):
 class SignUpViewSet(viewsets.GenericViewSet):
     permission_classes = (AllowAny, )
     serializer_class = serializers.SignUpSerializer
-    
+
     @detail_route(methods=['POST'])
     def signup(self, request, *args, **kwards):
         """
@@ -156,7 +163,26 @@ class SignUpViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            return Response()
+            for key in request.data:
+                if key == "name" or key == "phone" or key == "conekta_card":
+                    kwards.setdefault(key,request.data.get(key))
+            user = User.objects.create_user(
+                email=request.data.get("email"),
+                password=request.data.get("password"),
+                **kwards
+            )
+
+            device_token=request.data.get("device_token")
+            device_os=request.data.get("device_os")
+            if device_token and device_os:
+                device = Device.objects.register(
+                    device_token=device_token,
+                    device_os=device_os,
+                    user=user)
+
+            response_serializer = serializers.LoginResponseSerializer()
+            return Response(response_serializer.get_token(user))
+
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

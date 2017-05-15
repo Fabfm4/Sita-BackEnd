@@ -19,6 +19,14 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(
         required=True
     )
+    device_os= serializers.ChoiceField(
+        required=False,
+        choices=['ANDROID', 'IOS']
+    )
+    device_token= serializers.CharField(
+        required=False,
+        max_length=254
+    )
 
     def validate(self, data):
         """
@@ -31,6 +39,11 @@ class LoginSerializer(serializers.Serializer):
 
         if not user.check_password(data.get('password')):
             raise serializers.ValidationError("invalid credentials")
+
+        if data.get("device_os") or data.get("device_token"):
+            if not data.get("device_os") or not data.get("device_token"):
+                raise serializers.ValidationError(
+                    "Don`t send device OS or device token")
 
         if not user.is_active:
             raise serializers.ValidationError(
@@ -47,34 +60,57 @@ class LoginSerializer(serializers.Serializer):
 
 class SignUpSerializer(serializers.Serializer):
     """"""
-    name = serializers.CharField(
-        required = False,
-        max_length = 100
-    )
-    first_name = serializers.CharField(
-        max_length=100,
-        required=False
-    )
-    mothers_name = serializers.CharField(
-        max_length=100,
-        required=False
+    TYPE_OS = (
+        ('1', 'IOS'),
+        ('2', 'ANDROID')
     )
     email = serializers.EmailField(
         max_length=254,
         required=True
     )
-    conekta_card = serializers.CharField(
-        max_length=254,
-        required=False
-    )
-    phone = serializers.CharField(
-        max_length=10,
-        required=False
-    )
     password = serializers.CharField(
         max_length=100,
         required=True
     )
+    name = serializers.CharField(
+        required=False,
+        max_length = 100
+    )
+    phone = serializers.CharField(
+        required=False,
+        max_length=10
+    )
+    device_os= serializers.ChoiceField(
+        required=False,
+        choices=['ANDROID', 'IOS']
+    )
+    device_token= serializers.CharField(
+        required=False,
+        max_length=254
+    )
+    conekta_card = serializers.CharField(
+        max_length=254,
+        required=False
+    )
+
+    def validate(self, data):
+        if data.get("device_os") or data.get("device_token"):
+            if not data.get("device_os") or not data.get("device_token"):
+                raise serializers.ValidationError(
+                    "Don`t send device OS or device token")
+
+        if data.get("conekta_card"):
+            if not data.get("phone") or not data.get("name"):
+                raise serializers.ValidationError(
+                    "If send conektaCard you should send phone and name")
+        try:
+            user = User.objects.get(email__exact=data.get('email'))
+            raise serializers.ValidationError(
+                "The email is already exists")
+        except User.DoesNotExist:
+            pass
+
+        return data
 
 class LoginResponseSerializer(object):
     """

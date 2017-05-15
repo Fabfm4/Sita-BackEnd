@@ -6,5 +6,6 @@ from . import models
 
 admin.site.register(models.User)
 admin.site.register(models.Subscription)
+admin.site.register(models.Device)
 
 # Register your models here.

@@ -19,16 +19,34 @@ class UserSerializer(serializers.Serializer):
         max_length=254,
         required=True
     )
-    conekta_customer = serializers.CharField(
+    password = serializers.CharField(
         max_length=254,
-        required=False
+        required=True
     )
     phone = serializers.CharField(
         max_length=10,
         required=False
     )
 
+    def validate(self, data):
+        try:
+            user = User.objects.get(email__exact=data.get('email'))
+            raise serializers.ValidationError(
+                "The email is already exists")
+        except User.DoesNotExist:
+            pass
 
+        return data
+
+class UserUpdatePasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        max_length=254,
+        required=True
+    )
+    confirm_password = serializers.CharField(
+        max_length=254,
+        required=True
+    )
 
 class UserSerializerModel(serializers.ModelSerializer):
     """
@@ -46,4 +64,5 @@ class UserSerializerModel(serializers.ModelSerializer):
                 'email',
                 'has_subscription',
                 'is_superuser',
-                'reset_pass_code', )
+                'reset_pass_code',
+                'phone', )

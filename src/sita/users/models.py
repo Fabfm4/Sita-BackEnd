@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
 )
+from multiprocessing.managers import BaseManager
 from django.contrib.gis.db import models
 # from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
@@ -39,6 +40,20 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('is_superuser', True)
         return self._create_user(email, password, **extra_fields)
+
+
+
+class DeviceManager(models.Manager):
+    def register(self, device_token, device_os, user):
+        device = Device()
+        try:
+            device = Device.objects.get(user_id=user.id, device_os=device_os)
+        except Device.DoesNotExist:
+            pass
+        device.device_token = device_token
+        device.device_os = device_os
+        device.user_id=user.id
+        device.save()
 
 class User(AbstractBaseUser, PermissionsMixin):
     """Create custom model User."""
@@ -85,7 +100,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         null=True
     )
-    conekta_customer = models.CharField(
+    conekta_card = models.CharField(
         max_length=254,
         null=True,
         blank=True,
@@ -132,3 +147,33 @@ class Subscription(TimeStampedMixin):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT
     )
+
+class Device(TimeStampedMixin):
+    """ Create The subscriptions from User."""
+
+    TYPE_OS = (
+        ('IOS', 'IOS'),
+        ('ANDROID', 'ANDROID')
+    )
+    device_token = models.CharField(
+        max_length=254,
+        null=True,
+        blank=True,
+    )
+    device_os = models.CharField(
+        max_length=10,
+        choices=TYPE_OS
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT
+    )
+
+    objects = DeviceManager()
+
+    def __unicode__(self):
+        return self.get_full_name()
+
+    def get_full_name(self):
+        user = User.objects.get(id=self.user_id)
+        return "{0} {1}".format(self.device_os, user.email)
