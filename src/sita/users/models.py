@@ -41,6 +41,16 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         return self._create_user(email, password, **extra_fields)
 
+    def exists_user(self, email=None, pk=None):
+        try:
+            if email:
+                user = User.objects.get(email=email)
+            if pk:
+                user = User.objects.get(id=pk)
+            return True
+        except User.DoesNotExist:
+            return False
+
 
 
 class DeviceManager(models.Manager):

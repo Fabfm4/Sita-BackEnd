@@ -5,50 +5,57 @@ from rest_framework.response import Response
 from sita.core.api.routers.single import SingleObjectRouter
 from rest_framework.permissions import IsAuthenticated
 from .serializers import (
-    UserSerializerModel, UserSerializer, UserUpdatePasswordSerializer, UserPatchSerializer)
+    UserSerializerModel,
+    UserSerializer,
+    UserUpdatePasswordSerializer,
+    UserPatchSerializer)
 from .models import User
 from rest_framework import serializers
 from rest_framework_jwt.utils import jwt_get_user_id_from_payload_handler
 from rest_framework_jwt.settings import api_settings
-from sita.utils.refresh_token import get_user_by_token
+from sita.utils.refresh_token import has_permission
 from django.core.urlresolvers import reverse
 from rest_framework.decorators import detail_route
+from django.contrib.auth import get_user_model
+from sita.utils.urlresolvers import get_query_params
 
 
 class UserViewSet(
     base_mixins.CreateModelMixin,
-    base_mixins.UpdateModelMixin,
+    base_mixins.ListModelMixin,
     viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, )
     serializer_class = UserSerializer
+    list_serializer_class = UserSerializer
 
     def create(self, request, *args, **kwards):
         """
-        User login.
+        Create user by Admin.
         ---
-        type:
-          pk:
-            required: true
-            type: string
-          Authorization:
-            required: true
-            type: string
+        omit_serializer: true
         omit_parameters:
             - form
         parameters:
             - name: body
               type: UserSerializer
               paramType: body
+              description:
+                'email: <b>required</b> <br>
+                password: <b>required</b> <br>
+                name:NOT required <br>
+                firstName: NOT required <br>
+                mothersName: NOT required <br>
+                phone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
               type: string
               paramType: header
         responseMessages:
+            - code: 201
+              message: CREATED
             - code: 400
               message: BAD REQUEST
-            - code: 200
-              message: OK
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -57,10 +64,10 @@ class UserViewSet(
             - application/json
         """
 
-        serializer = self.get_serializer(data=request.data)
 
-        usernameToken = User.objects.get(id=get_user_by_token(request.META))
-        if usernameToken.is_superuser:
+        # Verify if the user has permission to use
+        if has_permission(request.META):
+            serializer = self.get_serializer(data=request.data)
             if serializer.is_valid():
                 for key in request.data:
                     if key == "name" or key == "phone" or key == "conekta_card":
@@ -70,11 +77,14 @@ class UserViewSet(
                     password=request.data.get("password"),
                     **kwards
                 )
-                return Response(headers={"user":request.get_full_path() + "/{0}".format(user.id)},
+                return Response(
+                    headers={
+                        "user":request.get_full_path() + "/{0}".format(user.id)
+                        },
                     status=status.HTTP_201_CREATED)
+            return Response(
+                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     @detail_route(methods=['PUT'])
@@ -82,20 +92,16 @@ class UserViewSet(
         """
         User Create.
         ---
-        type:
-          pk:
-            required: true
-            type: string
-          Authorization:
-            required: true
-            type: string
-        serializer: UserUpdatePasswordSerializer
+        omit_serializer: true
         omit_parameters:
             - form
         parameters:
             - name: body
               pytype: UserUpdatePasswordSerializer
               paramType: body
+              description:
+                'password: <b>required</b> <br>
+                confirmPassword: <b>required</b>'
             - name: Authorization
               description: Bearer {token}.
               required: true
@@ -104,6 +110,10 @@ class UserViewSet(
         responseMessages:
             - code: 400
               message: BAD REQUEST
+            - code: 401
+              message: UNAUTHORIZED
+            - code: 404
+              message: NOT FOUND
             - code: 200
               message: OK
             - code: 500
@@ -114,52 +124,54 @@ class UserViewSet(
             - application/json
         """
         serializer = UserUpdatePasswordSerializer(data=request.data)
-        usernameToken = User.objects.get(id=get_user_by_token(request.META))
-        if serializer.is_valid():
-            try:
-                user = User.objects.get(id=pk)
-                if user.email == usernameToken.email or usernameToken.is_superuser:
+
+        # Verify if exits the user with pk
+        if User.objects.exists_user(pk=pk):
+            user = User.objects.get(id=pk)
+            # Verify if the user has permission to use
+            if has_permission(request.META, user):
+                serializer = UserUpdatePasswordSerializer(data=request.data)
+                if serializer.is_valid():
                     user.set_password(request.data.get("password"))
                     user.save()
                     return Response(status=status.HTTP_200_OK)
-                else:
-                    return Response(
-                        {"message": "Unauthorized"},
-                        status=status.HTTP_401_UNAUTHORIZED)
-            except User.DoesNotExist:
                 return Response(
-                    {"message": "Not Found"},
-                    status=status.HTTP_404_NOT_FOUND)
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     def partial_update(self, request, pk=None):
         """
         User login.
         ---
-        type:
-          pk:
-            required: true
-            type: string
-          Authorization:
-            required: true
-            type: string
+        omit_serializer: true
         omit_parameters:
             - form
         parameters:
             - name: body
-              type: UserSerializer
+              pytype: UserPatchSerializer
               paramType: body
+              description:
+                'name: NOT required <br>
+                firstName: NOT required <br>
+                mothersName: NOT required <br>
+                phone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
               type: string
               paramType: header
         responseMessages:
-            - code: 400
-              message: BAD REQUEST
             - code: 200
               message: OK
+            - code: 401
+              message: UNAUTHORIZED
+            - code: 404
+              message: NOT_FOUND
+            - code: 400
+              message: BAD REQUEST
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -167,10 +179,11 @@ class UserViewSet(
         produces:
             - application/json
         """
-        try:
+        # Verify if exits the user with pk
+        if User.objects.exists_user(pk=pk):
             user = User.objects.get(id=pk)
-            usernameToken = User.objects.get(id=get_user_by_token(request.META))
-            if user.email == usernameToken.email or usernameToken.is_superuser:
+            # Verify if the user has permission to use
+            if has_permission(request.META, user):
                 serializer = UserPatchSerializer(data=request.data)
                 if serializer.is_valid():
                     for key in request.data:
@@ -185,30 +198,19 @@ class UserViewSet(
                         user.save()
                         return Response(
                             status=status.HTTP_200_OK)
-                else:
-                    return Response(
-                        serializer.errors,
-                        status=status.HTTP_400_BAD_REQUEST)
-            else:
                 return Response(
-                    {"message": "Unauthorized"},
-                    status=status.HTTP_401_UNAUTHORIZED)
-        except User.DoesNotExist:
-            return Response(
-                {"message": "Not Found"},
-                status=status.HTTP_404_NOT_FOUND)
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     def retrieve(self, request, pk=None):
         """
-        User Create.
+        View user with pk.
         ---
-        type:
-          pk:
-            required: true
-            type: string
-          Authorization:
-            required: true
-            type: string
+        response_serializer: UserSerializerModel
         omit_serializer: false
         parameters:
             - name: pk
@@ -224,6 +226,8 @@ class UserViewSet(
         responseMessages:
             - code: 400
               message: BAD REQUEST
+            - code: 401
+              message: UNAUTHORIZED
             - code: 404
               message: NOT FOUND
             - code: 200
@@ -235,31 +239,50 @@ class UserViewSet(
         produces:
             - application/json
         """
-        try:
+
+        # Verify if exits the user with pk
+        if User.objects.exists_user(pk=pk):
             user = User.objects.get(id=pk)
-            usernameToken = User.objects.get(id=get_user_by_token(request.META))
-            if user.email == usernameToken.email or usernameToken.is_superuser:
-                response_serializer = UserSerializerModel(user)
-            else:
-                return Response(
-                    {"message": "user not found"},
-                    status=status.HTTP_404_NOT_FOUND)
-        except User.DoesNotExist:
-            return Response(
-                {"message": "user not found"},
-                status=status.HTTP_404_NOT_FOUND)
+            # Verify if the user has permission to use
+            if has_permission(request.META, user):
+                    response_serializer = UserSerializerModel(user)
+                    return Response({"data":response_serializer.data})
 
-        return Response({"data":response_serializer.data})
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    def list(self, request):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def get_queryset(self, *args, **kwargs):
+
+        queryset = get_user_model().objects.all()
+        query_params = get_query_params(self.request)
+        q = query_params.get('q')
+
+        if q:
+            queryset = queryset.filter(email__contains=q)
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
         """
-        User Create.
+        Return a list of users, that matches with the given word.
         ---
+        response_serializer: UserSerializer
+        parameters:
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
+            - name: q
+              description: Search word.
+              paramType: query
+              type: string
         responseMessages:
-            - code: 400
-              message: BAD REQUEST
             - code: 200
               message: OK
+            - code: 403
+              message: FORBIDDEN
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -267,9 +290,10 @@ class UserViewSet(
         produces:
             - application/json
         """
-        pass
-        # usernameToken = User.objects.get(id=get_user_by_token(request.META))
-        # if usernameToken.is_superuser:
+        # Verify if the user has permission to use
+        if has_permission(request.META):
+            return super(UserViewSet, self).list(request, *args, **kwargs)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 router.register(
     r'user',

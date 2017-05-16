@@ -71,8 +71,7 @@ class ListModelMixin(object):
         if page is not None:
             serializer = self.get_serializer(
                 page,
-                many=True,
-                action=response_serializer
+                many=True
             )
             return self.get_paginated_response(serializer.data)
 

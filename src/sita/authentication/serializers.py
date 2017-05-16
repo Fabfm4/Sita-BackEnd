@@ -35,19 +35,19 @@ class LoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(email__exact=data.get('email'))
         except User.DoesNotExist:
-            raise serializers.ValidationError("invalid credentials")
+            raise serializers.ValidationError({"email":"invalid credentials"})
 
         if not user.check_password(data.get('password')):
-            raise serializers.ValidationError("invalid credentials")
+            raise serializers.ValidationError({"email":"invalid credentials"})
 
         if data.get("device_os") or data.get("device_token"):
             if not data.get("device_os") or not data.get("device_token"):
                 raise serializers.ValidationError(
-                    "Don`t send device OS or device token")
+                    {"device_token":"Don`t send device OS or device token"})
 
         if not user.is_active:
             raise serializers.ValidationError(
-                "The user has not been actived"
+                {"email":"The user is not actived"}
             )
 
         return data
@@ -97,16 +97,18 @@ class SignUpSerializer(serializers.Serializer):
         if data.get("device_os") or data.get("device_token"):
             if not data.get("device_os") or not data.get("device_token"):
                 raise serializers.ValidationError(
-                    "Don`t send device OS or device token")
+                    {"device_token":"Don`t send device OS or device token"})
 
         if data.get("conekta_card"):
             if not data.get("phone") or not data.get("name"):
                 raise serializers.ValidationError(
-                    "If send conektaCard you should send phone and name")
+                    {"conekta_card":
+                        "If send conektaCard you should send phone and name"})
         try:
             user = User.objects.get(email__exact=data.get('email'))
             raise serializers.ValidationError(
-                "The email is already exists")
+                {"email":"The user is not actived"}
+                )
         except User.DoesNotExist:
             pass
 
@@ -147,8 +149,8 @@ class RecoveryPasswordSerializer(serializers.Serializer):
 
         if not user.is_active:
             raise serializers.ValidationError(
-                "The user has not been actived"
-            )
+                {"email":"The user is not actived"}
+                )
 
         return data
 
@@ -190,11 +192,13 @@ class ResetPasswordWithCodeSerializer(serializers.Serializer):
         try:
             user = User.objects.get(reset_pass_code=data.get('recovery_code'))
         except User.DoesNotExist:
-            raise serializers.ValidationError("Don't exits code")
+            raise serializers.ValidationError(
+                {"recovery_code":"Don't exits code"})
 
         if not data.get('password') == data.get('password_confim'):
             raise serializers.ValidationError(
-                "Password is not equals to Confirm Password")
+                {"password_confim":
+                "Password is not equals to Confirm Password"})
 
         return data
 

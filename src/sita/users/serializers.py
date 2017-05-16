@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User
+from django.contrib.auth import get_user_model
 
 class UserSerializer(serializers.Serializer):
     """"""
@@ -32,11 +33,29 @@ class UserSerializer(serializers.Serializer):
         try:
             user = User.objects.get(email__exact=data.get('email'))
             raise serializers.ValidationError(
-                "The email is already exists")
+                {"email": "The email is already exists"})
         except User.DoesNotExist:
             pass
 
         return data
+
+class SearchUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = get_user_model()
+        fields = ('id',
+                'name',
+                'first_name',
+                'mothers_name',
+                'is_active',
+                'email',
+                'has_subscription',
+                'is_superuser',
+                'reset_pass_code',
+                'phone', )
+
+    def get_text(self, instance):
+        return instance.email
 
 class UserPatchSerializer(serializers.Serializer):
     """"""

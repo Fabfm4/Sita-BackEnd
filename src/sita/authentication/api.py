@@ -7,25 +7,39 @@ from rest_framework.renderers import JSONRenderer
 
 from sita.api.v1.routers import router
 from sita.users.models import User, Device
-from sita.authentication import serializers
+from sita.users.serializers import UserSerializer
+from sita.authentication.serializers import (LoginSerializer,
+    RecoveryPasswordSerializer,
+    LoginResponseSerializer,
+    ResetPasswordWithCodeSerializer,
+    SignUpSerializer)
 from sita.core.api.routers.single import SingleObjectRouter
 
 class LoginViewSet(viewsets.GenericViewSet):
     permission_classes = (AllowAny, )
-
-    serializer_class = serializers.LoginSerializer
+    serializer_class = LoginSerializer
 
     @detail_route(methods=['POST'])
     def signin(self, request, *args, **kwards):
         """
         User login.
         ---
+        type:
+            token:
+                type: string
+            user:
+                pytype: UserSerializer
         omit_parameters:
             - form
         parameters:
             - name: body
-              type: LoginSerializer
+              pytype: LoginSerializer
               paramType: body
+              description:
+                'email: <b>required</b> <br>
+                password: <b>required</b> <br>
+                deviceOs: NOT required <br>
+                deviceToken: NOT required'
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -40,10 +54,9 @@ class LoginViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
             user = serializer.get_user(serializer.data)
-            response_serializer = serializers.LoginResponseSerializer()
+            response_serializer = LoginResponseSerializer()
             device_token=request.data.get("device_token")
             device_os=request.data.get("device_os")
             if device_token and device_os:
@@ -53,14 +66,12 @@ class LoginViewSet(viewsets.GenericViewSet):
                     user=user)
             return Response(response_serializer.get_token(user))
 
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RecoveryPasswordViewSet(viewsets.GenericViewSet):
     permission_classes = (AllowAny, )
-
-    serializer_class = serializers.RecoveryPasswordSerializer
+    serializer_class = RecoveryPasswordSerializer
 
     @detail_route(methods=['POST'])
     def recovery_password(self, request, *args, **kwards):
@@ -73,6 +84,8 @@ class RecoveryPasswordViewSet(viewsets.GenericViewSet):
             - name: body
               type: RecoveryPasswordSerializer
               paramType: body
+              description:
+                'email: <b>required</b>'
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -87,7 +100,6 @@ class RecoveryPasswordViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
             serializer.generate_recovery_token(serializer.data)
             return Response()
@@ -96,9 +108,8 @@ class RecoveryPasswordViewSet(viewsets.GenericViewSet):
 
 
 class ResetPasswordWithCodeViewSet(viewsets.GenericViewSet):
-
     permission_classes = (AllowAny, )
-    serializer_class = serializers.ResetPasswordWithCodeSerializer
+    serializer_class = ResetPasswordWithCodeSerializer
 
     @detail_route(methods=['POST'])
     def reset_password_code(self, request, *args, **kwards):
@@ -111,6 +122,10 @@ class ResetPasswordWithCodeViewSet(viewsets.GenericViewSet):
             - name: body
               type: ResetPasswordWithCodeSerializer
               paramType: body
+              description:
+                'password: <b>required</b> <br>
+                passwordConfim: <b>required</b> <br>
+                recoveryCode: <b>required</b> <br>'
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -125,7 +140,6 @@ class ResetPasswordWithCodeViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
             serializer.update_password(data=request.data)
             return Response()
@@ -134,7 +148,7 @@ class ResetPasswordWithCodeViewSet(viewsets.GenericViewSet):
 
 class SignUpViewSet(viewsets.GenericViewSet):
     permission_classes = (AllowAny, )
-    serializer_class = serializers.SignUpSerializer
+    serializer_class = SignUpSerializer
 
     @detail_route(methods=['POST'])
     def signup(self, request, *args, **kwards):
@@ -147,6 +161,16 @@ class SignUpViewSet(viewsets.GenericViewSet):
             - name: body
               type: SignUpSerializer
               paramType: body
+              description:
+                'email: <b>required</b> <br>
+                password: <b>required</b> <br>
+                name:NOT required <br>
+                firstName: NOT required <br>
+                mothersName: NOT required <br>
+                phone: NOT required<br>
+                deviceOs: NOT required<br>
+                deviceToken: NOT required<br>
+                conektaCard: NOT required'
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -161,7 +185,6 @@ class SignUpViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
             for key in request.data:
                 if key == "name" or key == "phone" or key == "conekta_card":
@@ -180,9 +203,8 @@ class SignUpViewSet(viewsets.GenericViewSet):
                     device_os=device_os,
                     user=user)
 
-            response_serializer = serializers.LoginResponseSerializer()
+            response_serializer = LoginResponseSerializer()
             return Response(response_serializer.get_token(user))
-
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
