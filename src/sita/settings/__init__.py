@@ -40,9 +40,9 @@ INSTALLED_APPS = (
     'django_extensions',
     # Models
     'sita.users',
+    'sita.patients',
     'sita.cards',
     'sita.subscriptions',
-    'sita.patients',
     'sita.payments',
     'sita.appointments',
     'sita.notes',
@@ -145,6 +145,12 @@ JWT_AUTH = {
     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
 }
 
+
+SWAGGER_SETTINGS = {
+    'info': {
+        'title': 'Swagger Sita App',
+        },
+}
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
