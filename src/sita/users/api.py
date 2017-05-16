@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from sita.core.api.routers.single import SingleObjectRouter
 from rest_framework.permissions import IsAuthenticated
 from .serializers import (
-    UserSerializerModel, UserSerializer, UserUpdatePasswordSerializer)
+    UserSerializerModel, UserSerializer, UserUpdatePasswordSerializer, UserPatchSerializer)
 from .models import User
 from rest_framework import serializers
 from rest_framework_jwt.utils import jwt_get_user_id_from_payload_handler
@@ -89,11 +89,12 @@ class UserViewSet(
           Authorization:
             required: true
             type: string
+        serializer: UserUpdatePasswordSerializer
         omit_parameters:
             - form
         parameters:
             - name: body
-              type: serializer
+              pytype: UserUpdatePasswordSerializer
               paramType: body
             - name: Authorization
               description: Bearer {token}.
@@ -112,13 +113,48 @@ class UserViewSet(
         produces:
             - application/json
         """
-        serializer = UserUpdatePasswordSerializer()
-        pass
+        serializer = UserUpdatePasswordSerializer(data=request.data)
+        usernameToken = User.objects.get(id=get_user_by_token(request.META))
+        if serializer.is_valid():
+            try:
+                user = User.objects.get(id=pk)
+                if user.email == usernameToken.email or usernameToken.is_superuser:
+                    user.set_password(request.data.get("password"))
+                    user.save()
+                    return Response(status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        {"message": "Unauthorized"},
+                        status=status.HTTP_401_UNAUTHORIZED)
+            except User.DoesNotExist:
+                return Response(
+                    {"message": "Not Found"},
+                    status=status.HTTP_404_NOT_FOUND)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, pk=None):
         """
-        User Create.
+        User login.
         ---
+        type:
+          pk:
+            required: true
+            type: string
+          Authorization:
+            required: true
+            type: string
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              type: UserSerializer
+              paramType: body
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
         responseMessages:
             - code: 400
               message: BAD REQUEST
@@ -131,7 +167,36 @@ class UserViewSet(
         produces:
             - application/json
         """
-        pass
+        try:
+            user = User.objects.get(id=pk)
+            usernameToken = User.objects.get(id=get_user_by_token(request.META))
+            if user.email == usernameToken.email or usernameToken.is_superuser:
+                serializer = UserPatchSerializer(data=request.data)
+                if serializer.is_valid():
+                    for key in request.data:
+                        if key == "name":
+                            user.name = request.data.get(key)
+                        if key == "first_name":
+                            user.first_name = request.data.get(key)
+                        if key == "mothers_name":
+                            user.mothers_name = request.data.get(key)
+                        if key == "phone":
+                            user.phone = request.data.get(key)
+                        user.save()
+                        return Response(
+                            status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        serializer.errors,
+                        status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(
+                    {"message": "Unauthorized"},
+                    status=status.HTTP_401_UNAUTHORIZED)
+        except User.DoesNotExist:
+            return Response(
+                {"message": "Not Found"},
+                status=status.HTTP_404_NOT_FOUND)
 
     def retrieve(self, request, pk=None):
         """

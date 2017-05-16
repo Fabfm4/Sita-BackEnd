@@ -38,6 +38,25 @@ class UserSerializer(serializers.Serializer):
 
         return data
 
+class UserPatchSerializer(serializers.Serializer):
+    """"""
+    name = serializers.CharField(
+        required = False,
+        max_length = 100
+    )
+    first_name = serializers.CharField(
+        max_length=100,
+        required=False
+    )
+    mothers_name = serializers.CharField(
+        max_length=100,
+        required=False
+    )
+    phone = serializers.CharField(
+        max_length=10,
+        required=False
+    )
+
 class UserUpdatePasswordSerializer(serializers.Serializer):
     password = serializers.CharField(
         max_length=254,
@@ -47,6 +66,13 @@ class UserUpdatePasswordSerializer(serializers.Serializer):
         max_length=254,
         required=True
     )
+    def validate(self, data):
+        if data.get("confirm_password") != data.get("password"):
+            raise serializers.ValidationError(
+                "The passwords are not equals"
+            )
+
+        return data
 
 class UserSerializerModel(serializers.ModelSerializer):
     """
