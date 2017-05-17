@@ -8,7 +8,8 @@ from .serializers import (
     UserSerializerModel,
     UserSerializer,
     UserUpdatePasswordSerializer,
-    UserPatchSerializer)
+    UserPatchSerializer,
+    UserListSerializer)
 from .models import User
 from rest_framework import serializers
 from rest_framework_jwt.utils import jwt_get_user_id_from_payload_handler
@@ -18,15 +19,15 @@ from django.core.urlresolvers import reverse
 from rest_framework.decorators import detail_route
 from django.contrib.auth import get_user_model
 from sita.utils.urlresolvers import get_query_params
+from rest_framework.decorators import detail_route
 
 
 class UserViewSet(
     base_mixins.CreateModelMixin,
-    base_mixins.ListModelMixin,
     viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, )
     serializer_class = UserSerializer
-    list_serializer_class = UserSerializer
+    list_serializer_class = UserSerializerModel
 
     def create(self, request, *args, **kwards):
         """
@@ -252,6 +253,13 @@ class UserViewSet(
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+class UserListViewSet(
+    base_mixins.ListModelMixin,
+    viewsets.GenericViewSet):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = UserSerializerModel
+    list_serializer_class = UserSerializerModel
+
     def get_queryset(self, *args, **kwargs):
 
         queryset = get_user_model().objects.all()
@@ -263,11 +271,12 @@ class UserViewSet(
 
         return queryset
 
+
     def list(self, request, *args, **kwargs):
         """
         Return a list of users, that matches with the given word.
         ---
-        response_serializer: UserSerializer
+        response_serializer: UserListSerializer
         parameters:
             - name: Authorization
               description: Bearer {token}.
@@ -292,11 +301,17 @@ class UserViewSet(
         """
         # Verify if the user has permission to use
         if has_permission(request.META):
-            return super(UserViewSet, self).list(request, *args, **kwargs)
+            return super(UserListViewSet, self).list(request, *args, **kwargs)
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+
 router.register(
-    r'user',
+    r'users',
     UserViewSet,
     base_name='user'
+)
+router.register(
+    r'search/user',
+    UserListViewSet,
+    base_name='search/user'
 )

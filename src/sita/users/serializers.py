@@ -39,6 +39,36 @@ class UserSerializer(serializers.Serializer):
 
         return data
 
+class UserListSerializer(serializers.Serializer):
+    """"""
+    id = serializers.IntegerField(
+        read_only=True
+    )
+    name = serializers.CharField(
+        required = False,
+        max_length = 100
+    )
+    first_name = serializers.CharField(
+        max_length=100,
+        required=False
+    )
+    mothers_name = serializers.CharField(
+        max_length=100,
+        required=False
+    )
+    email = serializers.EmailField(
+        max_length=254,
+        required=True
+    )
+    password = serializers.CharField(
+        max_length=254,
+        required=True
+    )
+    phone = serializers.CharField(
+        max_length=10,
+        required=False
+    )
+
 class SearchUserSerializer(serializers.ModelSerializer):
 
     class Meta:
