@@ -3,32 +3,34 @@ from rest_framework import status
 from sita.api.v1.routers import router
 from sita.core.api.viewsets.nested import NestedViewset
 from rest_framework.permissions import IsAuthenticated
-from .serializers import PatientSerializer, PatientSerializerModel
+from .serializers import CardSerializer, CardSerializerModel
 from sita.users.api import UserViewSet
-from sita.patients.models import Patient
+from sita.cards.models import Card
 from sita.users.models import User
 from rest_framework.response import Response
 from sita.utils.refresh_token import has_permission
 from sita.core.api.mixins import base as base_mixins
 from django.contrib.auth import get_user_model
 from sita.utils.urlresolvers import get_query_params
+from rest_framework.decorators import detail_route
 
-class PatientViewSet(
+class CardViewSet(
     base_mixins.ListModelMixin,
     base_mixins.RetrieveModelMixin,
-    base_mixins.PartialUpdateModelMixin,
+    base_mixins.CreateModelMixin,
     GenericViewSet):
-    serializer_class =  PatientSerializerModel
-    retrieve_serializer_class = PatientSerializerModel
-    partial_update_serializer_class = PatientSerializerModel
-    update_serializer_class = PatientSerializerModel
+    serializer_class =  CardSerializerModel
+    retrieve_serializer_class = CardSerializerModel
+    partial_update_serializer_class = CardSerializerModel
+    update_serializer_class = CardSerializerModel
+    create_serializer_class = CardSerializer
     permission_classes = (IsAuthenticated, )
 
     def get_queryset(self, user_id=None, *args, **kwargs):
 
-        queryset = Patient.objects.all()
+        queryset = Card.objects.all()
         if user_id is not None:
-            queryset = Patient.objects.filter(user_id=user_id, is_active=True)
+            queryset = Card.objects.filter(user_id=user_id)
         query_params = get_query_params(self.request)
         q = query_params.get('q')
 
@@ -39,7 +41,7 @@ class PatientViewSet(
 
     def list(self, request, user_pk=None, *args, **kwards):
         """
-        List all patitent from user with filter
+        Show all cards from user
         ---
         omit_parameters:
             - form
@@ -56,8 +58,10 @@ class PatientViewSet(
         responseMessages:
             - code: 200
               message: OK
-            - code: 400
-              message: BAD REQUEST
+            - code: 404
+              message: NOT FOUND
+            - code: 401
+              message: UNAUTHORIZED
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -69,7 +73,7 @@ class PatientViewSet(
             user = User.objects.get(id=user_pk)
             if has_permission(request.META, user):
                 return super(
-                    PatientViewSet, self).list(
+                    CardViewSet, self).list(
                         request,
                         queryset=self.get_queryset(user.id),
                         *args,
@@ -77,15 +81,15 @@ class PatientViewSet(
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def create(self, request, user_pk=None):
+    def create(self, request, user_pk=None, *args, **kwargs):
         """
-        Create patient from user
+        Add card from user
         ---
         omit_parameters:
             - form
         parameters:
             - name: body
-              pytype: PatientSerializer
+              pytype: CardSerializer
               paramType: body
               description:
                 'name: <b>required</b> <br>
@@ -103,8 +107,10 @@ class PatientViewSet(
         responseMessages:
             - code: 201
               message: CREATED
-            - code: 400
-              message: BAD REQUEST
+            - code: 404
+              message: NOT FOUND
+            - code: 401
+              message: UNAUTHORIZED
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -115,10 +121,10 @@ class PatientViewSet(
         if User.objects.exists_user(pk=user_pk):
             user = User.objects.get(id=user_pk)
             if has_permission(request.META, user):
-                serializer = PatientSerializer(data=request.data)
+                serializer = CardSerializer(data=request.data)
                 if serializer.is_valid():
-                    fields = Patient().get_fields()
-                    Patient.objects.register(
+                    fields = Card().get_fields()
+                    Card.objects.register(
                         data=request.data, fields=fields, user=user)
                     return Response(status=status.HTTP_201_CREATED)
                 return Response(
@@ -128,7 +134,7 @@ class PatientViewSet(
 
     def retrieve(self, request, user_pk=None, pk=None,  *args, **kwards):
         """
-        View a specific patient
+        Show an specific card
         ---
         omit_parameters:
             - form
@@ -141,6 +147,10 @@ class PatientViewSet(
         responseMessages:
             - code: 200
               message: OK
+            - code: 404
+              message: NOT FOUND
+            - code: 401
+              message: UNAUTHORIZED
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -150,12 +160,12 @@ class PatientViewSet(
         """
         if User.objects.exists_user(pk=user_pk):
             user = User.objects.get(id=user_pk)
-            if Patient.objects.exists(pk=pk):
-                patient = Patient.objects.get(pk=pk)
-                if patient.user_id == user.id and patient.is_active:
+            if Card.objects.exists(pk=pk):
+                card = Card.objects.get(pk=pk)
+                if card.user_id == user.id:
                     if has_permission(request.META, user):
                         return super(
-                            PatientViewSet, self).retrieve(
+                            CardViewSet, self).retrieve(
                                 request,
                                 pk=pk,
                                 *args,
@@ -164,24 +174,15 @@ class PatientViewSet(
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def partial_update(self, request, user_pk=None, pk=None):
+    @detail_route(methods=['PUT'])
+    def set_default_card(self, request, user_pk=None, pk=None, *args, **kwargs):
         """
-        Update information from an specific patient
+        Assing some card like default.
         ---
+        omit_serializer: true
         omit_parameters:
             - form
         parameters:
-            - name: body
-              type: PatientSerializer
-              paramType: body
-              description:
-                'name: NOT required <br>
-                lastName: NOT required <br>
-                mothersName: NOT required <br>
-                email: NOT required <br>
-                age: NOT required <br>
-                mobilePhone: NOT required <br>
-                housePhone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
@@ -190,8 +191,10 @@ class PatientViewSet(
         responseMessages:
             - code: 200
               message: OK
-            - code: 400
-              message: BAD REQUEST
+            - code: 404
+              message: NOT FOUND
+            - code: 401
+              message: UNAUTHORIZED
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -201,18 +204,24 @@ class PatientViewSet(
         """
         if User.objects.exists_user(pk=user_pk):
             user = User.objects.get(id=user_pk)
-            if Patient.objects.exists(pk=pk):
-                patient = Patient.objects.get(pk=pk)
-                if patient.user_id == user.id and patient.is_active:
+            if Card.objects.exists(pk=pk):
+                card = Card.objects.get(pk=pk)
+                if card.user_id == user.id:
                     if has_permission(request.META, user):
-                        return super(PatientViewSet, self).partial_update(request, pk)
+                        oldCardDefault = Card.objects.get_card_default(user.id)
+                        if oldCardDefault is not None:
+                            oldCardDefault.is_default = False
+                            oldCardDefault.save()
+                        card.is_default = True
+                        card.save()
+                        return Response(status=status.HTTP_200_OK)
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, user_pk=None, pk=None):
         """
-        Write the status from patient
+        Delete card
         ---
         omit_parameters:
             - form
@@ -225,6 +234,12 @@ class PatientViewSet(
         responseMessages:
             - code: 200
               message: OK
+            - code: 422
+              message: UNPROCESSABLE ENTITY
+            - code: 404
+              message: NOT FOUND
+            - code: 401
+              message: UNAUTHORIZED
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -234,20 +249,31 @@ class PatientViewSet(
         """
         if User.objects.exists_user(pk=user_pk):
             user = User.objects.get(id=user_pk)
-            if Patient.objects.exists(pk=pk):
-                patient = Patient.objects.get(pk=pk)
-                if patient.user_id == user.id and patient.is_active:
+            if Card.objects.exists(pk=pk):
+                card = Card.objects.get(pk=pk)
+                if card.user_id == user.id:
                     if has_permission(request.META, user):
-                        patient.is_active = False
-                        patient.save()
+                        if card.is_default:
+                            cards = Card.objects.filter(
+                                user_id=user.id, is_default=False)
+                            print(cards)
+                            if cards:
+                                newCardDefault = cards[0]
+                                newCardDefault.is_default = True
+                                newCardDefault.save()
+                            else:
+                                return Response(
+                                    {"message":"Can't delete this card"},
+                                    status=422)
+                        card.delete()
                         return Response(status=status.HTTP_200_OK)
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 router.register_nested(
     r'users',
-    r'patients',
-    PatientViewSet,
-    parent_lookup_name='users',
-    base_name='patients'
+    r'cards',
+    CardViewSet,
+    parent_lookup_name='user',
+    base_name='cards'
 )

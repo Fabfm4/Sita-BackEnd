@@ -96,7 +96,7 @@ class UserViewSet(
     @detail_route(methods=['PUT'])
     def update_password(self, request, pk=None):
         """
-        User Create.
+        Change password from user
         ---
         omit_serializer: true
         omit_parameters:
@@ -150,7 +150,7 @@ class UserViewSet(
 
     def partial_update(self, request, pk=None):
         """
-        User login.
+        Update user
         ---
         omit_serializer: true
         omit_parameters:
