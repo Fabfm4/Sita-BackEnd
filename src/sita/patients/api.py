@@ -33,7 +33,7 @@ class PatientViewSet(
         q = query_params.get('q')
 
         if q:
-            queryset = queryset.filter(email__contains=q)
+            queryset = queryset.filter(name__icontains=q)
 
         return queryset
 
@@ -44,24 +44,18 @@ class PatientViewSet(
         omit_parameters:
             - form
         parameters:
-            - name: body
-              pytype: PatientSerializer
-              paramType: body
-              description:
-                'email: <b>required</b> <br>
-                password: <b>required</b> <br>
-                name:NOT required <br>
-                firstName: NOT required <br>
-                mothersName: NOT required <br>
-                phone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
               type: string
               paramType: header
+            - name: q
+              description: Search word.
+              paramType: query
+              type: string
         responseMessages:
-            - code: 201
-              message: CREATED
+            - code: 200
+              message: OK
             - code: 400
               message: BAD REQUEST
             - code: 500
@@ -91,15 +85,16 @@ class PatientViewSet(
             - form
         parameters:
             - name: body
-              type: PatientSerializer
+              pytype: PatientSerializer
               paramType: body
               description:
-                'email: <b>required</b> <br>
-                password: <b>required</b> <br>
-                name:NOT required <br>
-                firstName: NOT required <br>
+                'name: <b>required</b> <br>
+                email: <b>required</b> <br>
+                mobilePhone: <b>required</b> <br>
+                lastName:NOT required <br>
                 mothersName: NOT required <br>
-                phone: NOT required'
+                age: NOT required <br>
+                housePhone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
@@ -138,26 +133,14 @@ class PatientViewSet(
         omit_parameters:
             - form
         parameters:
-            - name: body
-              type: PatientSerializer
-              paramType: body
-              description:
-                'email: <b>required</b> <br>
-                password: <b>required</b> <br>
-                name:NOT required <br>
-                firstName: NOT required <br>
-                mothersName: NOT required <br>
-                phone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
               type: string
               paramType: header
         responseMessages:
-            - code: 201
-              message: CREATED
-            - code: 400
-              message: BAD REQUEST
+            - code: 200
+              message: OK
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -169,7 +152,7 @@ class PatientViewSet(
             user = User.objects.get(id=user_pk)
             if Patient.objects.exists(pk=pk):
                 patient = Patient.objects.get(pk=pk)
-                if patient.user_id == user.id:
+                if patient.user_id == user.id and patient.is_active:
                     if has_permission(request.META, user):
                         return super(
                             PatientViewSet, self).retrieve(
@@ -192,20 +175,21 @@ class PatientViewSet(
               type: PatientSerializer
               paramType: body
               description:
-                'email: <b>required</b> <br>
-                password: <b>required</b> <br>
-                name:NOT required <br>
-                firstName: NOT required <br>
+                'name: NOT required <br>
+                lastName: NOT required <br>
                 mothersName: NOT required <br>
-                phone: NOT required'
+                email: NOT required <br>
+                age: NOT required <br>
+                mobilePhone: NOT required <br>
+                housePhone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
               type: string
               paramType: header
         responseMessages:
-            - code: 201
-              message: CREATED
+            - code: 200
+              message: OK
             - code: 400
               message: BAD REQUEST
             - code: 500
@@ -219,7 +203,7 @@ class PatientViewSet(
             user = User.objects.get(id=user_pk)
             if Patient.objects.exists(pk=pk):
                 patient = Patient.objects.get(pk=pk)
-                if patient.user_id == user.id:
+                if patient.user_id == user.id and patient.is_active:
                     if has_permission(request.META, user):
                         return super(PatientViewSet, self).partial_update(request, pk)
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -233,26 +217,14 @@ class PatientViewSet(
         omit_parameters:
             - form
         parameters:
-            - name: body
-              type: PatientSerializer
-              paramType: body
-              description:
-                'email: <b>required</b> <br>
-                password: <b>required</b> <br>
-                name:NOT required <br>
-                firstName: NOT required <br>
-                mothersName: NOT required <br>
-                phone: NOT required'
             - name: Authorization
               description: Bearer {token}.
               required: true
               type: string
               paramType: header
         responseMessages:
-            - code: 201
-              message: CREATED
-            - code: 400
-              message: BAD REQUEST
+            - code: 200
+              message: OK
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -264,7 +236,7 @@ class PatientViewSet(
             user = User.objects.get(id=user_pk)
             if Patient.objects.exists(pk=pk):
                 patient = Patient.objects.get(pk=pk)
-                if patient.user_id == user.id:
+                if patient.user_id == user.id and patient.is_active:
                     if has_permission(request.META, user):
                         patient.is_active = False
                         patient.save()

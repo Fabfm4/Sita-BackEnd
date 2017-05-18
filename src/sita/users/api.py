@@ -214,14 +214,12 @@ class UserViewSet(
               type: string
               paramType: header
         responseMessages:
-            - code: 400
-              message: BAD REQUEST
+            - code: 200
+              message: OK
             - code: 401
               message: UNAUTHORIZED
             - code: 404
               message: NOT FOUND
-            - code: 200
-              message: OK
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
@@ -276,8 +274,8 @@ class UserViewSet(
         responseMessages:
             - code: 200
               message: OK
-            - code: 403
-              message: FORBIDDEN
+            - code: 401
+              message: UNAUTHORIZED
             - code: 500
               message: INTERNAL SERVER ERROR
         consumes:
