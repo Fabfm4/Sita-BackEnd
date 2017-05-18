@@ -16,17 +16,19 @@ from sita.utils.urlresolvers import get_query_params
 class PatientViewSet(
     base_mixins.ListModelMixin,
     base_mixins.RetrieveModelMixin,
+    base_mixins.PartialUpdateModelMixin,
     GenericViewSet):
     serializer_class =  PatientSerializerModel
     retrieve_serializer_class = PatientSerializerModel
-    update_serializer_class = PatientSerializer
+    partial_update_serializer_class = PatientSerializerModel
+    update_serializer_class = PatientSerializerModel
     permission_classes = (IsAuthenticated, )
 
     def get_queryset(self, user_id=None, *args, **kwargs):
 
         queryset = Patient.objects.all()
         if user_id is not None:
-            queryset = Patient.objects.filter(user_id=user_id)
+            queryset = Patient.objects.filter(user_id=user_id, is_active=True)
         query_params = get_query_params(self.request)
         q = query_params.get('q')
 
@@ -219,11 +221,56 @@ class PatientViewSet(
                 patient = Patient.objects.get(pk=pk)
                 if patient.user_id == user.id:
                     if has_permission(request.META, user):
-                        return Response()
+                        return super(PatientViewSet, self).partial_update(request, pk)
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+    def destroy(self, request, user_pk=None, pk=None):
+        """
+        Create user by Admin.
+        ---
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              type: PatientSerializer
+              paramType: body
+              description:
+                'email: <b>required</b> <br>
+                password: <b>required</b> <br>
+                name:NOT required <br>
+                firstName: NOT required <br>
+                mothersName: NOT required <br>
+                phone: NOT required'
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
+        responseMessages:
+            - code: 201
+              message: CREATED
+            - code: 400
+              message: BAD REQUEST
+            - code: 500
+              message: INTERNAL SERVER ERROR
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        """
+        if User.objects.exists_user(pk=user_pk):
+            user = User.objects.get(id=user_pk)
+            if Patient.objects.exists(pk=pk):
+                patient = Patient.objects.get(pk=pk)
+                if patient.user_id == user.id:
+                    if has_permission(request.META, user):
+                        patient.is_active = False
+                        patient.save()
+                        return Response(status=status.HTTP_200_OK)
+                    return Response(status=status.HTTP_401_UNAUTHORIZED)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 router.register_nested(
     r'users',

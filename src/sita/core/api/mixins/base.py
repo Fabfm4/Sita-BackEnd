@@ -95,7 +95,7 @@ class RetrieveModelMixin(object):
         if instance is None:
             instance = self.get_object()
 
-        serializer = self.get_serializer(instance, action=response_serializer)
+        serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
 
@@ -156,15 +156,13 @@ class PartialUpdateModelMixin(object):
             instance,
             data=request.data,
             partial=True,
-            action=request_serializer
         )
         update_serializer.is_valid(raise_exception=True)
         updated_object = update_serializer.save()
 
         # Serializer that will be used to retrieve the object.
         retrieve_serializer = self.get_serializer(
-            updated_object,
-            action=response_serializer
+            updated_object
         )
         return Response(retrieve_serializer.data)
 

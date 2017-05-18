@@ -69,24 +69,6 @@ class UserListSerializer(serializers.Serializer):
         required=False
     )
 
-class SearchUserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = get_user_model()
-        fields = ('id',
-                'name',
-                'first_name',
-                'mothers_name',
-                'is_active',
-                'email',
-                'has_subscription',
-                'is_superuser',
-                'reset_pass_code',
-                'phone', )
-
-    def get_text(self, instance):
-        return instance.email
-
 class UserPatchSerializer(serializers.Serializer):
     """"""
     name = serializers.CharField(

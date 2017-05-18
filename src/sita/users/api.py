@@ -24,10 +24,15 @@ from rest_framework.decorators import detail_route
 
 class UserViewSet(
     base_mixins.CreateModelMixin,
+    base_mixins.ListModelMixin,
+    base_mixins.RetrieveModelMixin,
+    base_mixins.PartialUpdateModelMixin,
     viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, )
-    serializer_class = UserSerializer
-    list_serializer_class = UserSerializerModel
+    serializer_class = UserSerializerModel
+    retrieve_serializer_class = UserSerializerModel
+    partial_update_serializer_class = UserSerializerModel
+    update_serializer_class = UserSerializerModel
 
     def create(self, request, *args, **kwards):
         """
@@ -38,7 +43,7 @@ class UserViewSet(
             - form
         parameters:
             - name: body
-              type: UserSerializer
+              pytype: UserSerializer
               paramType: body
               description:
                 'email: <b>required</b> <br>
@@ -68,7 +73,7 @@ class UserViewSet(
 
         # Verify if the user has permission to use
         if has_permission(request.META):
-            serializer = self.get_serializer(data=request.data)
+            serializer = UserSerializer(data=request.data)
             if serializer.is_valid():
                 for key in request.data:
                     if key == "name" or key == "phone" or key == "conekta_card":
@@ -185,29 +190,13 @@ class UserViewSet(
             user = User.objects.get(id=pk)
             # Verify if the user has permission to use
             if has_permission(request.META, user):
-                serializer = UserPatchSerializer(data=request.data)
-                if serializer.is_valid():
-                    for key in request.data:
-                        if key == "name":
-                            user.name = request.data.get(key)
-                        if key == "first_name":
-                            user.first_name = request.data.get(key)
-                        if key == "mothers_name":
-                            user.mothers_name = request.data.get(key)
-                        if key == "phone":
-                            user.phone = request.data.get(key)
-                        user.save()
-                        return Response(
-                            status=status.HTTP_200_OK)
-                return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST)
+                return super(UserViewSet, self).partial_update(request, pk)
 
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request, pk=None,  *args, **kwards):
         """
         View user with pk.
         ---
@@ -246,19 +235,16 @@ class UserViewSet(
             user = User.objects.get(id=pk)
             # Verify if the user has permission to use
             if has_permission(request.META, user):
-                    response_serializer = UserSerializerModel(user)
-                    return Response({"data":response_serializer.data})
+                return super(
+                    UserViewSet, self).retrieve(
+                        request,
+                        pk=pk,
+                        *args,
+                        **kwards)
 
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(status=status.HTTP_404_NOT_FOUND)
-
-class UserListViewSet(
-    base_mixins.ListModelMixin,
-    viewsets.GenericViewSet):
-    permission_classes = (IsAuthenticated, )
-    serializer_class = UserSerializerModel
-    list_serializer_class = UserSerializerModel
 
     def get_queryset(self, *args, **kwargs):
 
@@ -301,17 +287,11 @@ class UserListViewSet(
         """
         # Verify if the user has permission to use
         if has_permission(request.META):
-            return super(UserListViewSet, self).list(request, *args, **kwargs)
+            return super(UserViewSet, self).list(request, *args, **kwargs)
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-
 
 router.register(
     r'users',
     UserViewSet,
     base_name='user'
-)
-router.register(
-    r'search/user',
-    UserListViewSet,
-    base_name='search/user'
 )

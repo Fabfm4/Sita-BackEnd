@@ -22,9 +22,9 @@ class PatientManager(models.Manager):
 
     def exists(self, pk=None):
         try:
-            user = Patient.objects.get(id=pk)
+            patient = Patient.objects.get(id=pk)
             return True
-        except User.DoesNotExist:
+        except Patient.DoesNotExist:
             return False
 
 

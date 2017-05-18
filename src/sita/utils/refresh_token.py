@@ -48,6 +48,6 @@ def has_permission(meta, user=None):
         if usernameToken.is_superuser:
                 return True
         if user is not None:
-            if user.email == usernameToken.email:
-                    return True
+            if user.id == usernameToken.id:
+                return True
     return False
