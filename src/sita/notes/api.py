@@ -3,30 +3,29 @@ from rest_framework import status
 from sita.api.v1.routers import router
 from sita.core.api.viewsets.nested import NestedViewset
 from rest_framework.permissions import IsAuthenticated
-from .serializers import PatientSerializer, PatientSerializerModel
-from sita.users.api import UserViewSet
+from .serializers import NoteSerializer, NoteSerializerModel
 from sita.patients.models import Patient
 from sita.users.models import User
+from .models import Note
 from rest_framework.response import Response
 from sita.utils.refresh_token import has_permission
 from sita.core.api.mixins import base as base_mixins
 from django.contrib.auth import get_user_model
 from sita.utils.urlresolvers import get_query_params
 
-class PatientUserViewSet(
+class NotePatientViewSet(
     base_mixins.ListModelMixin,
     GenericViewSet):
-    serializer_class =  PatientSerializerModel
-    retrieve_serializer_class = PatientSerializerModel
-    partial_update_serializer_class = PatientSerializerModel
-    update_serializer_class = PatientSerializerModel
+    serializer_class =  NoteSerializerModel
+    list_serializer_class =  NoteSerializerModel
+    retrieve_serializer_class = NoteSerializerModel
+    partial_update_serializer_class = NoteSerializerModel
+    update_serializer_class = NoteSerializerModel
     permission_classes = (IsAuthenticated, )
 
-    def get_queryset(self, user_id=None, *args, **kwargs):
+    def get_queryset(self, patient_pk=None, *args, **kwargs):
 
-        queryset = Patient.objects.all()
-        if user_id is not None:
-            queryset = Patient.objects.filter(user_id=user_id, is_active=True)
+        queryset = Note.objects.filter(patient_id=patient_pk)
         query_params = get_query_params(self.request)
         q = query_params.get('q')
 
@@ -35,7 +34,7 @@ class PatientUserViewSet(
 
         return queryset
 
-    def list(self, request, user_pk=None, *args, **kwards):
+    def list(self, request, patient_pk=None, *args, **kwards):
         """
         List all patitent from user with filter
         ---
@@ -63,20 +62,22 @@ class PatientUserViewSet(
         produces:
             - application/json
         """
-        if User.objects.exists_user(pk=user_pk):
-            print user_pk
-            user = User.objects.get(id=user_pk)
-            if has_permission(request.META, user):
-                return super(
-                    PatientUserViewSet, self).list(
-                        request,
-                        queryset=self.get_queryset(user.id),
-                        *args,
-                        **kwards    )
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if Patient.objects.exists(pk=patient_pk):
+            patient = Patient.objects.get(id=patient_pk)
+            if patient.is_active:
+                if User.objects.exists_user(pk=patient.user_id):
+                    user = User.objects.get(id=patient.user_id)
+                    if has_permission(request.META, user):
+                        return super(
+                            NotePatientViewSet, self).list(
+                                request,
+                                queryset=self.get_queryset(patient.id),
+                                *args,
+                                **kwards    )
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def create(self, request, user_pk=None):
+    def create(self, request, patient_pk=None):
         """
         Create patient from user
         ---
@@ -84,7 +85,7 @@ class PatientUserViewSet(
             - form
         parameters:
             - name: body
-              pytype: PatientSerializer
+              pytype: NoteSerializer
               paramType: body
               description:
                 'name: <b>required</b> <br>
@@ -111,40 +112,42 @@ class PatientUserViewSet(
         produces:
             - application/json
         """
-        if User.objects.exists_user(pk=user_pk):
-            user = User.objects.get(id=user_pk)
-            if has_permission(request.META, user):
-                serializer = PatientSerializer(data=request.data)
-                if serializer.is_valid():
-                    fields = Patient().get_fields()
-                    Patient.objects.register(
-                        data=request.data, fields=fields, user=user)
-                    return Response(status=status.HTTP_201_CREATED)
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if Patient.objects.exists(pk=patient_pk):
+            patient = Patient.objects.get(id=patient_pk)
+            if patient.is_active:
+                if User.objects.exists_user(pk=patient.user_id):
+                    user = User.objects.get(id=patient.user_id)
+                    if has_permission(request.META, user):
+                        serializer = NoteSerializer(data=request.data)
+                        if serializer.is_valid():
+                            fields = Note().get_fields()
+                            Note.objects.register(
+                                data=request.data, fields=fields, patient=patient)
+                            return Response(status=status.HTTP_201_CREATED)
+                        return Response(
+                            serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-
-
-class PatientViewSet(
+class NoteViewSet(
     base_mixins.ListModelMixin,
     base_mixins.RetrieveModelMixin,
     base_mixins.PartialUpdateModelMixin,
     GenericViewSet):
-    serializer_class =  PatientSerializerModel
-    retrieve_serializer_class = PatientSerializerModel
-    partial_update_serializer_class = PatientSerializerModel
-    update_serializer_class = PatientSerializerModel
+    serializer_class =  NoteSerializerModel
+    retrieve_serializer_class = NoteSerializerModel
+    partial_update_serializer_class = NoteSerializerModel
+    update_serializer_class = NoteSerializerModel
     permission_classes = (IsAuthenticated, )
 
+
     def get_queryset(self, *args, **kwargs):
-        queryset = Patient.objects.all()
+        queryset = Note.objects.all()
         query_params = get_query_params(self.request)
         q = query_params.get('q')
 
         if q:
-            queryset = queryset.filter(name__icontains=q)
+            queryset = queryset.filter(title__icontains=q)
 
         return queryset
 
@@ -178,13 +181,12 @@ class PatientViewSet(
         """
         if has_permission(request.META):
             return super(
-                PatientViewSet, self).list(
+                NoteViewSet, self).list(
                     request,
                     queryset=self.get_queryset(),
                     *args,
                     **kwards    )
         return Response(status=status.HTTP_401_UNAUTHORIZED)
-
 
     def retrieve(self, request, pk=None,  *args, **kwards):
         """
@@ -208,21 +210,22 @@ class PatientViewSet(
         produces:
             - application/json
         """
-        if Patient.objects.exists(pk=pk):
-            patient = Patient.objects.get(pk=pk)
-            if patient.is_active:
+        if Note.objects.exists(pk=pk):
+            note = Note.objects.get(id=pk)
+            if Patient.objects.exists(pk=note.patient_id):
+                patient = Patient.objects.get(id=pk)
                 if User.objects.exists_user(pk=patient.user_id):
                     user = User.objects.get(id=patient.user_id)
                     if has_permission(request.META, user):
                         return super(
-                            PatientViewSet, self).retrieve(
+                            NoteViewSet, self).retrieve(
                                 request,
                                 pk=pk,
-                                instance=patient)
+                                instance=note)
                 return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def partial_update(self, request, user_pk=None, pk=None):
+    def partial_update(self, request, pk=None):
         """
         Update information from an specific patient
         ---
@@ -230,7 +233,7 @@ class PatientViewSet(
             - form
         parameters:
             - name: body
-              pytype: PatientSerializer
+              pytype: NoteSerializer
               paramType: body
               description:
                 'name: NOT required <br>
@@ -258,18 +261,18 @@ class PatientViewSet(
             - application/json
         """
 
-        if Patient.objects.exists(pk=pk):
-            patient = Patient.objects.get(pk=pk)
-            if patient.is_active:
+        if Note.objects.exists(pk=pk):
+            note = Note.objects.get(id=pk)
+            if Patient.objects.exists(pk=note.patient_id):
+                patient = Patient.objects.get(id=pk)
                 if User.objects.exists_user(pk=patient.user_id):
                     user = User.objects.get(id=patient.user_id)
                     if has_permission(request.META, user):
-                        return super(PatientViewSet, self).partial_update(request, pk, patient)
+                        return super(NoteViewSet, self).partial_update(request, pk, note)
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
-
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def destroy(self, request, user_pk=None, pk=None):
+    def destroy(self, request, pk=None):
         """
         Write the status from patient
         ---
@@ -291,28 +294,27 @@ class PatientViewSet(
         produces:
             - application/json
         """
-        if Patient.objects.exists(pk=pk):
-            patient = Patient.objects.get(pk=pk)
-            if User.objects.exists_user(pk=patient.user_id):
-                user = User.objects.get(id=patient.user_id)
-                if patient.user_id == user.id and patient.is_active:
+        if Note.objects.exists(pk=pk):
+            note = Note.objects.get(id=pk)
+            if Patient.objects.exists(pk=note.patient_id):
+                patient = Patient.objects.get(id=pk)
+                if User.objects.exists_user(pk=patient.user_id):
+                    user = User.objects.get(id=patient.user_id)
                     if has_permission(request.META, user):
-                        patient.is_active = False
-                        patient.save()
+                        note.delete()
                         return Response(status=status.HTTP_200_OK)
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 router.register_nested(
-    r'users',
     r'patients',
-    PatientUserViewSet,
-    parent_lookup_name='user',
-    base_name='patients'
+    r'notes',
+    NotePatientViewSet,
+    parent_lookup_name='patient',
+    base_name='notes'
 )
-
 router.register(
-    r'patients',
-    PatientViewSet,
-    base_name='patient'
+    r'notes',
+    NoteViewSet,
+    base_name='note'
 )

@@ -19,7 +19,7 @@ class CardManager(models.Manager):
             user_id=user.id,
             **extra_fields
         )
-        if self.has_card_default(user_pk=user.id) is not None:
+        if self.get_card_default(user_pk=user.id) is not None:
             card.is_default = False
         card.save()
 
