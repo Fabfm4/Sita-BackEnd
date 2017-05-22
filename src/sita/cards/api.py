@@ -130,148 +130,9 @@ class CardUserViewSet(
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    # def retrieve(self, request, user_pk=None, pk=None,  *args, **kwards):
-    #     """
-    #     Show an specific card
-    #     ---
-    #     omit_parameters:
-    #         - form
-    #     parameters:
-    #         - name: Authorization
-    #           description: Bearer {token}.
-    #           required: true
-    #           type: string
-    #           paramType: header
-    #     responseMessages:
-    #         - code: 200
-    #           message: OK
-    #         - code: 404
-    #           message: NOT FOUND
-    #         - code: 401
-    #           message: UNAUTHORIZED
-    #         - code: 500
-    #           message: INTERNAL SERVER ERROR
-    #     consumes:
-    #         - application/json
-    #     produces:
-    #         - application/json
-    #     """
-    #     if User.objects.exists_user(pk=user_pk):
-    #         user = User.objects.get(id=user_pk)
-    #         if Card.objects.exists(pk=pk):
-    #             card = Card.objects.get(pk=pk)
-    #             if card.user_id == user.id:
-    #                 if has_permission(request.META, user):
-    #                     return super(
-    #                         CardViewSet, self).retrieve(
-    #                             request,
-    #                             pk=pk,
-    #                             *args,
-    #                             **kwards)
-    #                 return Response(status=status.HTTP_401_UNAUTHORIZED)
-    #
-    #     return Response(status=status.HTTP_404_NOT_FOUND)
-    #
-    # @detail_route(methods=['PUT'])
-    # def set_default_card(self, request, user_pk=None, pk=None, *args, **kwargs):
-    #     """
-    #     Assing some card like default.
-    #     ---
-    #     omit_serializer: true
-    #     omit_parameters:
-    #         - form
-    #     parameters:
-    #         - name: Authorization
-    #           description: Bearer {token}.
-    #           required: true
-    #           type: string
-    #           paramType: header
-    #     responseMessages:
-    #         - code: 200
-    #           message: OK
-    #         - code: 404
-    #           message: NOT FOUND
-    #         - code: 401
-    #           message: UNAUTHORIZED
-    #         - code: 500
-    #           message: INTERNAL SERVER ERROR
-    #     consumes:
-    #         - application/json
-    #     produces:
-    #         - application/json
-    #     """
-    #     if User.objects.exists_user(pk=user_pk):
-    #         user = User.objects.get(id=user_pk)
-    #         if Card.objects.exists(pk=pk):
-    #             card = Card.objects.get(pk=pk)
-    #             if card.user_id == user.id:
-    #                 if has_permission(request.META, user):
-    #                     oldCardDefault = Card.objects.get_card_default(user.id)
-    #                     if oldCardDefault is not None:
-    #                         oldCardDefault.is_default = False
-    #                         oldCardDefault.save()
-    #                     card.is_default = True
-    #                     card.save()
-    #                     return Response(status=status.HTTP_200_OK)
-    #                 return Response(status=status.HTTP_401_UNAUTHORIZED)
-    #
-    #     return Response(status=status.HTTP_404_NOT_FOUND)
-    #
-    # def destroy(self, request, user_pk=None, pk=None):
-    #     """
-    #     Delete card
-    #     ---
-    #     omit_parameters:
-    #         - form
-    #     parameters:
-    #         - name: Authorization
-    #           description: Bearer {token}.
-    #           required: true
-    #           type: string
-    #           paramType: header
-    #     responseMessages:
-    #         - code: 200
-    #           message: OK
-    #         - code: 422
-    #           message: UNPROCESSABLE ENTITY
-    #         - code: 404
-    #           message: NOT FOUND
-    #         - code: 401
-    #           message: UNAUTHORIZED
-    #         - code: 500
-    #           message: INTERNAL SERVER ERROR
-    #     consumes:
-    #         - application/json
-    #     produces:
-    #         - application/json
-    #     """
-    #     if User.objects.exists_user(pk=user_pk):
-    #         user = User.objects.get(id=user_pk)
-    #         if Card.objects.exists(pk=pk):
-    #             card = Card.objects.get(pk=pk)
-    #             if card.user_id == user.id:
-    #                 if has_permission(request.META, user):
-    #                     if card.is_default:
-    #                         cards = Card.objects.filter(
-    #                             user_id=user.id, is_default=False)
-    #                         print(cards)
-    #                         if cards:
-    #                             newCardDefault = cards[0]
-    #                             newCardDefault.is_default = True
-    #                             newCardDefault.save()
-    #                         else:
-    #                             return Response(
-    #                                 {"message":"Can't delete this card"},
-    #                                 status=422)
-    #                     card.delete()
-    #                     return Response(status=status.HTTP_200_OK)
-    #                 return Response(status=status.HTTP_401_UNAUTHORIZED)
-    #     return Response(status=status.HTTP_404_NOT_FOUND)
-
 class CardViewSet(
     base_mixins.ListModelMixin,
     base_mixins.RetrieveModelMixin,
-    base_mixins.PartialUpdateModelMixin,
     GenericViewSet):
     serializer_class =  CardSerializerModel
     retrieve_serializer_class = CardSerializerModel
@@ -349,7 +210,7 @@ class CardViewSet(
             - application/json
         """
         if Card.objects.exists(pk=pk):
-            card = Note.objects.get(id=pk)
+            card = Card.objects.get(id=pk)
             if User.objects.exists_user(pk=card.user_id):
                 user = User.objects.get(id=card.user_id)
                 if has_permission(request.META, user):
@@ -358,51 +219,6 @@ class CardViewSet(
                             request,
                             pk=pk,
                             instance=card)
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    def partial_update(self, request, pk=None):
-        """
-        Update information from an specific patient
-        ---
-        omit_parameters:
-            - form
-        parameters:
-            - name: body
-              pytype: CardSerializer
-              paramType: body
-              description:
-                'name: NOT required <br>
-                lastName: NOT required <br>
-                mothersName: NOT required <br>
-                email: NOT required <br>
-                age: NOT required <br>
-                mobilePhone: NOT required <br>
-                housePhone: NOT required'
-            - name: Authorization
-              description: Bearer {token}.
-              required: true
-              type: string
-              paramType: header
-        responseMessages:
-            - code: 200
-              message: OK
-            - code: 400
-              message: BAD REQUEST
-            - code: 500
-              message: INTERNAL SERVER ERROR
-        consumes:
-            - application/json
-        produces:
-            - application/json
-        """
-
-        if Card.objects.exists(pk=pk):
-            card = Note.objects.get(id=pk)
-            if User.objects.exists_user(pk=card.user_id):
-                user = User.objects.get(id=card.user_id)
-                if has_permission(request.META, user):
-                    return super(CardViewSet, self).partial_update(request, pk, card)
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -429,7 +245,7 @@ class CardViewSet(
             - application/json
         """
         if Card.objects.exists(pk=pk):
-            card = Note.objects.get(id=pk)
+            card = Card.objects.get(id=pk)
             if User.objects.exists_user(pk=card.user_id):
                 user = User.objects.get(id=card.user_id)
                 if has_permission(request.META, user):

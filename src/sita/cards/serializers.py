@@ -8,7 +8,7 @@ class CardSerializer(serializers.Serializer):
         required = True,
         max_length = 100
     )
-    type_card = serializers.CharField(
+    brand_card = serializers.CharField(
         max_length=100,
         required=True
     )
@@ -31,7 +31,7 @@ class CardSerializerModel(serializers.ModelSerializer):
         model = Card
         fields = ('id',
                 'last_four',
-                'type_card',
+                'brand_card',
                 'conekta_card',
                 'is_default',
                 'user' )
