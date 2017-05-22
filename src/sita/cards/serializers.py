@@ -4,13 +4,19 @@ from sita.users.models import User
 
 class CardSerializer(serializers.Serializer):
     """"""
+
+    BRAND_CARDS = (
+        ('VISA', 'VISA'),
+        ('MASTERCARD', 'MASTERCARD'),
+        ('AMEX', 'AMEX'),
+    )
     last_four = serializers.CharField(
         required = True,
         max_length = 100
     )
-    brand_card = serializers.CharField(
-        max_length=100,
-        required=True
+    brand_card = serializers.ChoiceField(
+        required=True,
+        choices=BRAND_CARDS
     )
     conekta_card = serializers.CharField(
         max_length=100,
