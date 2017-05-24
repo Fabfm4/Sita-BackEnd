@@ -192,6 +192,7 @@ class SignUpViewSet(viewsets.GenericViewSet):
             user = User.objects.create_user(
                 email=request.data.get("email"),
                 password=request.data.get("password"),
+                time_zone=request.data.get("time_zone"),
                 **kwards
             )
 

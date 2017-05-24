@@ -74,6 +74,10 @@ class Appointment(TimeStampedMixin):
     )
     duration_hours = models.IntegerField()
 
+    time_zone = models.CharField(
+        max_length=254,
+        default='')
+
 
     objects = AppointmentManager()
 

@@ -4,6 +4,8 @@ from .models import Appointment
 from sita.users.models import User
 from datetime import datetime
 from calendar import weekday
+from datetime import datetime, timedelta
+import pytz
 
 class AppointmentSerializer(serializers.Serializer):
     """"""
@@ -17,6 +19,19 @@ class AppointmentSerializer(serializers.Serializer):
     duration_hours = serializers.IntegerField(
         required = True
     )
+    time_zone = serializers.CharField(
+        required = False
+    )
+
+    def validate(self, data):
+        if data.get("time_zone") is not None:
+            try:
+                datetime.now(pytz.timezone(data.get("time_zone")))
+            except pytz.UnknownTimeZoneError:
+                raise serializers.ValidationError(
+                    {"time_zone":"The time zone is not correct"})
+
+        return data
 
 class AppointmentSerializerModel(serializers.ModelSerializer):
     """
@@ -31,71 +46,10 @@ class AppointmentSerializerModel(serializers.ModelSerializer):
                 'date_appointment',
                 'duration_hours',
                 'patient',
-                'user' )
+                'user' ,
+                'time_zone' )
 
-class AppointmentListSerializerMonth(Serializer):
-    def serialize(self, queryset, year, month, last_day_month=None,  **options):
-        print queryset
-        self.start_serialization()
-        self.start_object(month,year)
-        if queryset:
-            last_day = None
-            for query in queryset:
-                day = query.date_appointment.day
-                print day
-                if last_day is None:
-                    for x in range(1, day):
-                        self.start_day(year, month, x)
-                    last_day = day
-                if last_day == day:
-                    self.start_date(query)
-                else:
-                    self.start_day(year, month, last_day, has_dates=True)
-                    for x in range(last_day + 1, day):
-                        self.start_day(year, month, x)
-                    self.start_date(query)
-                    last_day = day
-            self.start_day(year, month, last_day, has_dates=True)
-            for x in range(last_day + 1, last_day_month+1):
-                self.start_day(year, month, x)
-        else:
-            for x in range(1, last_day_month+1):
-                self.start_day(year, month, x)
-        self.end_object()
-        self.end_serialization()
-        return self.getvalue()
-
-    def start_day(self, year, month, day, has_dates=False):
-        week_day = weekday(year, month, day)
-        self._days.append(
-            {"day":day,
-            "week_day":week_day,
-            "has_dates":has_dates,
-            "dates": self._dates})
-        self._dates = []
-
-    def start_date(self, appointment):
-        self._dates.append(
-            {"id":appointment.id,
-            "patient_id":appointment.patient_id,
-            "hour": appointment.date_appointment.hour})
-
-
-    def start_serialization(self):
-        self._month = None
-        self._year = None
-        self._current = None
-        self._days = []
-        self._dates = []
-        self.objects=None
-
-
-    def start_object(self, month, year):
-        self._month = month
-        self._year = year
-
-    def end_object(self):
-        self.objects = {
-            "month":self._month,
-            "year":self._year,
-            "days": self._days}
+class AppointmentListSerializer(Serializer):
+    def end_object( self, obj ):
+        self._current['id'] = obj._get_pk_val()
+        self.objects.append( self._current )

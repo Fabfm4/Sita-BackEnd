@@ -6,6 +6,8 @@ from rest_framework import serializers
 from sita.users.models import User
 from sita.utils.refresh_token import create_token
 from hashlib import md5
+from datetime import datetime, timedelta
+import pytz
 
 class LoginSerializer(serializers.Serializer):
     """
@@ -72,6 +74,10 @@ class SignUpSerializer(serializers.Serializer):
         max_length=100,
         required=True
     )
+    time_zone = serializers.CharField(
+        max_length=100,
+        required=True
+    )
     name = serializers.CharField(
         required=False,
         max_length = 100
@@ -111,6 +117,12 @@ class SignUpSerializer(serializers.Serializer):
                 )
         except User.DoesNotExist:
             pass
+        try:
+            datetime.now(pytz.timezone(data.get("time_zone")))
+        except pytz.UnknownTimeZoneError:
+            raise serializers.ValidationError(
+                {"time_zone":"The time zone is not correct"}
+                )
 
         return data
 

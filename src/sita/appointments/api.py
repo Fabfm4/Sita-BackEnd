@@ -3,7 +3,7 @@ from rest_framework import status
 from sita.api.v1.routers import router
 from sita.core.api.viewsets.nested import NestedViewset
 from rest_framework.permissions import IsAuthenticated
-from .serializers import AppointmentSerializer, AppointmentSerializerModel, AppointmentListSerializerMonth
+from .serializers import AppointmentSerializer, AppointmentSerializerModel, AppointmentListSerializer
 from sita.users.api import UserViewSet
 from sita.appointments.models import Appointment
 from sita.patients.models import Patient
@@ -138,7 +138,7 @@ class AppointmentViewSet(
                     return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-class AppointmentMonthViewSet(
+class AppointmentListViewSet(
     base_mixins.ListModelMixin,
     GenericViewSet):
     serializer_class =  AppointmentSerializerModel
@@ -147,6 +147,16 @@ class AppointmentMonthViewSet(
     update_serializer_class = AppointmentSerializerModel
     create_serializer_class = AppointmentSerializerModel
     permission_classes = (IsAuthenticated, )
+
+
+    def get_queryset(self, user_id, date_init, date_end, *args, **kwargs):
+
+        queryset = Appointment.objects.extra(where=["date_appointment >= '{0}'".format(date_init)])
+        queryset = queryset.extra(where=["date_appointment <= '{0}'".format(date_end)])
+        queryset = queryset.order_by("date_appointment")
+        queryset = queryset.filter(user_id=user_id)
+
+        return queryset
 
     def list(self, request, user_pk=None, *args, **kwargs):
         """
@@ -160,15 +170,15 @@ class AppointmentMonthViewSet(
               required: true
               type: string
               paramType: header
-            - name: month
+            - name: date_init
               description: Search word.
               paramType: query
-              type: string
+              type: datetime
               required: true
-            - name: year
+            - name: date_end
               description: Search word.
               paramType: query
-              type: string
+              type: datetime
               required: true
         responseMessages:
             - code: 200
@@ -189,57 +199,29 @@ class AppointmentMonthViewSet(
             if has_permission(request.META, user):
                 query_params = get_query_params(request)
                 try:
-                    year = int(query_params.get('year'))
+                    date_init = datetime.strptime(query_params.get("date_init"), "%Y-%m-%dT%H:%M:%S")
                 except ValueError:
-                    return Response({"year":"is not a number"},status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"date_init": "Is not valid date"},status=status.HTTP_400_BAD_REQUEST)
                 try:
-                    month = int(query_params.get('month'))
+                    date_end = datetime.strptime(query_params.get("date_end"), "%Y-%m-%dT%H:%M:%S")
                 except ValueError:
-                    return Response({"month":"is not a number"},status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"date_end": "Is not valid date"},status=status.HTTP_400_BAD_REQUEST)
 
-                if month > 12 or month < 1:
-                    return Response({"month":"number month is not correct"}, status=status.HTTP_400_BAD_REQUEST)
-
-                if year < 1:
-                    return Response({"year":"number month is not correct"}, status=status.HTTP_400_BAD_REQUEST)
-
-                query = construct_query_view_month(year=year, month=month)
-                serializer = AppointmentListSerializerMonth()
-                last_day_month = monthrange(year, month)
-                data = serializer.serialize(queryset=query,year=year, month=month, last_day_month=last_day_month[1])
-                print data
-                return Response(data,status=status.HTTP_200_OK)
+                serializer = AppointmentListSerializer()
+                query = self.get_queryset(user.id, date_init, date_end)
+                data = serializer.serialize(
+                    query,
+                    fields=("subject", "date_appointment", "user", "patient", "duration_hours", "time_zone"))
+                # return super(
+                #     AppointmentListViewSet, self).list(
+                #         request,
+                #         queryset=self.get_queryset(user.id, date_init, date_end),
+                #         *args,
+                #         **kwargs    )
+                return Response({"data":data},status=status.HTTP_200_OK)
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-
-
-class AppointmentDayViewSet(
-    base_mixins.ListModelMixin,
-    GenericViewSet):
-    serializer_class =  AppointmentSerializerModel
-    retrieve_serializer_class = AppointmentSerializerModel
-    partial_update_serializer_class = AppointmentSerializerModel
-    update_serializer_class = AppointmentSerializerModel
-    create_serializer_class = AppointmentSerializerModel
-    permission_classes = (IsAuthenticated, )
-
-    def list(self, request, user_pk=None, patient_pk=None, *args, **kwargs):
-        pass
-
-
-class AppointmentWeekViewSet(
-    base_mixins.ListModelMixin,
-    GenericViewSet):
-    serializer_class =  AppointmentSerializerModel
-    retrieve_serializer_class = AppointmentSerializerModel
-    partial_update_serializer_class = AppointmentSerializerModel
-    update_serializer_class = AppointmentSerializerModel
-    create_serializer_class = AppointmentSerializerModel
-    permission_classes = (IsAuthenticated, )
-
-    def list(self, request, user_pk=None, patient_pk=None, *args, **kwargs):
-        pass
 router.register_nested(
     r'patients',
     r'appointments',
@@ -250,22 +232,8 @@ router.register_nested(
 )
 router.register_nested(
     r'users',
-    r'appointments_view_month',
-    AppointmentMonthViewSet,
+    r'appointments',
+    AppointmentListViewSet,
     parent_lookup_name='user',
-    base_name='appointments_view_month'
-)
-router.register_nested(
-    r'users',
-    r'appointments_view_day',
-    AppointmentDayViewSet,
-    parent_lookup_name='user',
-    base_name='appointments_view_day'
-)
-router.register_nested(
-    r'users',
-    r'appointments_view_week',
-    AppointmentWeekViewSet,
-    parent_lookup_name='user',
-    base_name='appointments_view_week'
+    base_name='appointments'
 )

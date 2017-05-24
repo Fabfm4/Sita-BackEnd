@@ -122,4 +122,5 @@ class UserSerializerModel(serializers.ModelSerializer):
                 'has_subscription',
                 'is_superuser',
                 'reset_pass_code',
-                'phone', )
+                'phone',
+                'time_zone', )

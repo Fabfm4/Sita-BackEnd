@@ -124,6 +124,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     has_subscription = models.BooleanField(
         default=False
     )
+    time_zone = models.CharField(
+        max_length=254,
+        default='')
 
     objects = UserManager()
 
