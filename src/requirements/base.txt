@@ -24,3 +24,4 @@ python-memcached==1.53
 # Packages
 ipython
 Werkzeug
+conekta

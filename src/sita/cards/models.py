@@ -46,11 +46,11 @@ class Card(TimeStampedMixin):
     )
     BRAND_CARDS = (
         ('VISA', 'VISA'),
-        ('MASTERCARD', 'MASTERCARD'),
-        ('AMEX', 'AMEX'),
+        ('MC', 'MASTERCARD'),
+        ('AMERICAN_EXPRESS', 'AMERICAN EXPRESS'),
     )
     brand_card = models.CharField(
-        max_length=10,
+        max_length=100,
         choices=BRAND_CARDS)
     conekta_card = models.CharField(
         max_length=254

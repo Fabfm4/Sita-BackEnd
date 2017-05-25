@@ -110,7 +110,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         null=True
     )
-    conekta_card = models.CharField(
+    conekta_customer = models.CharField(
         max_length=254,
         null=True,
         blank=True,
@@ -144,10 +144,21 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Subscription(TimeStampedMixin):
     """ Create The subscriptions from User."""
 
-    expiration_date = models.DateField(
-        editable=False,
+    expiration_date = models.DateTimeField(
         blank=True,
         null=True
+    )
+    next_pay_date = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+    next_mount_pay = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    next_time_in_minutes = models.IntegerField(
+        default=0
     )
     is_current = models.BooleanField(
         default=True

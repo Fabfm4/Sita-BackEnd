@@ -6,7 +6,10 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 
 from sita.api.v1.routers import router
-from sita.users.models import User, Device
+from sita.utils import conekta_sita
+from sita.users.models import User, Device, Subscription
+from sita.subscriptions.models import Subscription as Subscriptions
+from sita.cards.models import Card
 from sita.users.serializers import UserSerializer
 from sita.authentication.serializers import (LoginSerializer,
     RecoveryPasswordSerializer,
@@ -14,6 +17,7 @@ from sita.authentication.serializers import (LoginSerializer,
     ResetPasswordWithCodeSerializer,
     SignUpSerializer)
 from sita.core.api.routers.single import SingleObjectRouter
+from datetime import datetime, timedelta
 
 class LoginViewSet(viewsets.GenericViewSet):
     permission_classes = (AllowAny, )
@@ -186,15 +190,47 @@ class SignUpViewSet(viewsets.GenericViewSet):
 
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
+            conekta_customer = ""
+            if request.data.get("conekta_card"):
+                customer = conekta_sita.create_customer(data=request.data)
+                if customer is not None:
+                    conekta_customer = customer.id
             for key in request.data:
-                if key == "name" or key == "phone" or key == "conekta_card":
+                if key == "name" or key == "phone":
                     kwards.setdefault(key,request.data.get(key))
             user = User.objects.create_user(
                 email=request.data.get("email"),
                 password=request.data.get("password"),
                 time_zone=request.data.get("time_zone"),
+                conekta_customer=conekta_customer,
                 **kwards
             )
+
+            if customer is not None:
+                card_data = {
+                    "last_four":customer.payment_sources[0].last4,
+                    "is_default":True,
+                    "conekta_card":customer.payment_sources[0].id,
+                    "brand_card":customer.payment_sources[0].brand,
+                }
+                fields = Card().get_fields()
+                Card.objects.register(
+                    data=card_data, fields=fields, user=user)
+                subscription = Subscriptions.objects.get(id=request.data.get("subscription_id"))
+                next_time_expirate = datetime.now() + timedelta(minutes=43200)
+                subscription_user = Subscription(
+                    user_id=user.id,
+                    time_in_minutes=43200,
+                    is_test=True,
+                    is_current=True,
+                    next_time_in_minutes=subscription.time_in_minutes,
+                    next_mount_pay=subscription.amount,
+                    expiration_date=next_time_expirate,
+                    next_pay_date=next_time_expirate
+                )
+                subscription_user.save()
+                user.has_subscription = True
+                user.save()
 
             device_token=request.data.get("device_token")
             device_os=request.data.get("device_os")

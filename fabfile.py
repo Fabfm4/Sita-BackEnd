@@ -23,6 +23,15 @@ def virtualenv():
         with shell_env(DJANGO_SETTINGS_MODULE=env.django_settings):
             yield
 
+@task
+def load_dummy_data(*args):
+    """
+    Loads the dummy data for developing.
+    """
+    loaddata(
+        'subscriptions.json',
+        'users.json',
+    )
 
 @task
 def environment(env_name):
@@ -93,6 +102,7 @@ def resetdb():
     urun('dropdb sita')
     createdb()
     migrate()
+    load_dummy_data()
 
 
 @task

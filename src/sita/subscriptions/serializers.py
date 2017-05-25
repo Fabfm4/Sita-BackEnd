@@ -15,6 +15,10 @@ class SubscriptionSerializer(serializers.Serializer):
         max_length=100,
         required=True
     )
+    amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+    )
 
 class SubscriptionSerializerModel(serializers.ModelSerializer):
     """
@@ -27,4 +31,5 @@ class SubscriptionSerializerModel(serializers.ModelSerializer):
         fields = ('id',
                 'title',
                 'time_in_minutes',
-                'description',)
+                'description',
+                'amount',)

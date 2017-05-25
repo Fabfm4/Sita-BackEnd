@@ -4,6 +4,7 @@ import hashlib
 import random
 from rest_framework import serializers
 from sita.users.models import User
+from sita.subscriptions.models import Subscription
 from sita.utils.refresh_token import create_token
 from hashlib import md5
 from datetime import datetime, timedelta
@@ -98,6 +99,9 @@ class SignUpSerializer(serializers.Serializer):
         max_length=254,
         required=False
     )
+    subscription_id= serializers.IntegerField(
+        required=False
+    )
 
     def validate(self, data):
         if data.get("device_os") or data.get("device_token"):
@@ -106,10 +110,17 @@ class SignUpSerializer(serializers.Serializer):
                     {"device_token":"Don`t send device OS or device token"})
 
         if data.get("conekta_card"):
-            if not data.get("phone") or not data.get("name"):
+            if not data.get("phone") or not data.get("name") or not data.get("subscription_id"):
                 raise serializers.ValidationError(
                     {"conekta_card":
                         "If send conektaCard you should send phone and name"})
+            try:
+                subscription = Subscription.objects.get(id=data.get('subscription_id'))
+            except Subscription.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"subscription_id":"That subscription don't exists"}
+                    )
+
         try:
             user = User.objects.get(email__exact=data.get('email'))
             raise serializers.ValidationError(

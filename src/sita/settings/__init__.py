@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 import datetime
 import os
 
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -50,6 +51,7 @@ INSTALLED_APPS = (
     # Third party apps.
     'rest_framework_swagger',
     'rest_framework',
+    'django_cron',
 )
 
 SITE_ID = 1
@@ -64,6 +66,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+CRON_CLASSES = [
+    "sita.utils.cron.MyCronJob",
+]
 
 ROOT_URLCONF = 'sita.urls'
 
@@ -197,3 +202,10 @@ MEDIA_ROOT = os.path.realpath(
 MEDIA_URL = '/media/uploads/'
 
 PRODUCTION = False
+
+BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Nairobi'

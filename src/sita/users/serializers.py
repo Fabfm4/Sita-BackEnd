@@ -123,4 +123,5 @@ class UserSerializerModel(serializers.ModelSerializer):
                 'is_superuser',
                 'reset_pass_code',
                 'phone',
-                'time_zone', )
+                'time_zone',
+                'conekta_customer', )

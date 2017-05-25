@@ -40,8 +40,19 @@ class Subscription(TimeStampedMixin):
         null=True,
         blank=True
     )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
 
     objects = SubscriptionManager()
+
+    def __unicode__(self):
+        return self.get_full_name()
+
+    def get_full_name(self):
+        return "Subscription: {0}".format(self.title)
 
     def get_fields(self):
         list = []
