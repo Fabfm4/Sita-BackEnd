@@ -217,7 +217,8 @@ class SignUpViewSet(viewsets.GenericViewSet):
                 Card.objects.register(
                     data=card_data, fields=fields, user=user)
                 subscription = Subscriptions.objects.get(id=request.data.get("subscription_id"))
-                next_time_expirate = datetime.now() + timedelta(minutes=43200)
+                # next_time_expirate = datetime.now() + timedelta(minutes=43200)
+                next_time_expirate = datetime.now() + timedelta(minutes=1)
                 subscription_user = Subscription(
                     user_id=user.id,
                     time_in_minutes=43200,
@@ -226,7 +227,8 @@ class SignUpViewSet(viewsets.GenericViewSet):
                     next_time_in_minutes=subscription.time_in_minutes,
                     next_mount_pay=subscription.amount,
                     expiration_date=next_time_expirate,
-                    next_pay_date=next_time_expirate
+                    next_pay_date=next_time_expirate,
+                    title=subscription.title
                 )
                 subscription_user.save()
                 user.has_subscription = True

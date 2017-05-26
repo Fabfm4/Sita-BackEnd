@@ -33,10 +33,11 @@ class Payment(TimeStampedMixin):
 
     BRAND_CARDS = (
         ('VISA', 'VISA'),
-        ('MASTERCARD', 'MASTERCARD'),
-        ('AMEX', 'AMEX'),
+        ('MC', 'MASTERCARD'),
+        ('AMERICAN_EXPRESS', 'AMERICAN EXPRESS'),
     )
-    conekta_id = models.BinaryField()
+    conekta_id = models.CharField(
+        max_length=255)
     card_last_four = models.CharField(
         max_length=4
     )
@@ -49,7 +50,8 @@ class Payment(TimeStampedMixin):
         decimal_places=2
     )
     description = models.TextField()
-    reference_id_conekta = models.BinaryField()
+    reference_id_conekta = models.CharField(
+        max_length=255)
     currency = models.CharField(
         max_length=10
     )
@@ -59,6 +61,9 @@ class Payment(TimeStampedMixin):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT
+    )
+    fail = models.BooleanField(
+        default=False
     )
 
     objects = PaymentManager()

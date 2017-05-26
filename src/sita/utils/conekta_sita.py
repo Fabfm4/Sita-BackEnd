@@ -57,3 +57,29 @@ def set_default_card(user, card):
   except conekta.ConektaError as e:
     print e.message
     return False
+
+def create_order(user, subscription):
+    conekta.api_key = "key_xjYBs3oatsrrMmf1tEWf3A"
+    conekta.api_version = "2.0.0"
+    try:
+        customer = conekta.Customer.find(user.conekta_customer)
+        order = conekta.Order.create({
+            "currency": "MXN",
+            "customer_info": {
+                "customer_id": customer.id
+            },
+            "line_items": [{
+                "name": "Pago: {0}".format(subscription.title),
+                "unit_price": int(subscription.next_mount_pay)*100,
+                "quantity": 1
+            }],
+            "charges":[{
+                "payment_method": {
+                    "type": "default"
+                }
+            }]
+        })
+        return order
+    except conekta.ConektaError as e:
+        print e.message
+        return None

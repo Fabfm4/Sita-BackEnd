@@ -33,7 +33,9 @@ class Subscription(TimeStampedMixin):
     """Create Subscription model."""
 
     title = models.CharField(
-        max_length=254
+        max_length=254,
+        null=False,
+        blank=True
     )
     time_in_minutes = models.IntegerField()
     description = models.TextField(
