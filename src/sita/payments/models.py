@@ -4,7 +4,7 @@ import os
 from django.conf import settings
 from django.db import models
 from sita.core.db.models import TimeStampedMixin
-from sita.users.models import User
+from sita.users.models import User, Subscription
 
 # Create your models here.
 class PaymentManager(models.Manager):
@@ -37,13 +37,17 @@ class Payment(TimeStampedMixin):
         ('AMERICAN_EXPRESS', 'AMERICAN EXPRESS'),
     )
     conekta_id = models.CharField(
-        max_length=255)
+        max_length=255,
+        null=True
+    )
     card_last_four = models.CharField(
-        max_length=4
+        max_length=4,
+        null=True
     )
     card_brand = models.CharField(
         max_length=10,
-        choices=BRAND_CARDS
+        choices=BRAND_CARDS,
+        null=True
     )
     amount = models.DecimalField(
         max_digits=10,
@@ -51,7 +55,8 @@ class Payment(TimeStampedMixin):
     )
     description = models.TextField()
     reference_id_conekta = models.CharField(
-        max_length=255)
+        max_length=255,
+        null=True)
     currency = models.CharField(
         max_length=10
     )
@@ -61,6 +66,11 @@ class Payment(TimeStampedMixin):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT
+    )
+    subscription = models.ForeignKey(
+        'users.subscription',
+        on_delete=models.PROTECT,
+        null=True
     )
     fail = models.BooleanField(
         default=False

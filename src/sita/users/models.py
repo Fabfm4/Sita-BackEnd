@@ -52,7 +52,6 @@ class UserManager(BaseUserManager):
             return False
 
 
-
 class DeviceManager(models.Manager):
     def register(self, device_token, device_os, user):
         device = Device()
@@ -123,6 +122,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     has_subscription = models.BooleanField(
         default=False
+    )
+    automatic_payment = models.BooleanField(
+        default=True
     )
     time_zone = models.CharField(
         max_length=254,

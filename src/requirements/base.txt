@@ -12,6 +12,8 @@ djangorestframework>=3.3,<3.4
 djangorestframework-jwt>=1.7,<1.8
 drf-nested-routers>=0.10,<0.11
 djangorestframework-camel-case
+celery==3.1.18
+redis==2.10.3
 
 # Solr
 drf-haystack==1.6.1

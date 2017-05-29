@@ -51,7 +51,6 @@ INSTALLED_APPS = (
     # Third party apps.
     'rest_framework_swagger',
     'rest_framework',
-    'django_cron',
 )
 
 SITE_ID = 1

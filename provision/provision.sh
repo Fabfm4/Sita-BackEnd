@@ -11,6 +11,8 @@ PACKAGES="$PACKAGES nginx"
 
 apt-get install -y $PACKAGES
 
+echo "Installing Celery"
+apt-get install -y redis-server
 
 echo "Setting up PostgreSQL server..."
 cp /tmp/templates/postgresql/pg_hba.conf /etc/postgresql/9.3/main/pg_hba.conf

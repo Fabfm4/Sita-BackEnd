@@ -37,6 +37,13 @@ class CardManager(models.Manager):
         except Card.DoesNotExist:
             return None
 
+    def user_has_card(self, user):
+        cards = Card.objects.filter(user_id=user.id)
+        if cards:
+            return True
+        else:
+            return False
+
 
 class Card(TimeStampedMixin):
     """Create model Card"""

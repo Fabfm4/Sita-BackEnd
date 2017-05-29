@@ -9,7 +9,8 @@ from .serializers import (
     UserSerializer,
     UserUpdatePasswordSerializer,
     UserPatchSerializer,
-    UserListSerializer)
+    UserListSerializer,
+    UserGetSubscription)
 from .models import User
 from rest_framework import serializers
 from rest_framework_jwt.utils import jwt_get_user_id_from_payload_handler
@@ -19,7 +20,7 @@ from django.core.urlresolvers import reverse
 from rest_framework.decorators import detail_route
 from django.contrib.auth import get_user_model
 from sita.utils.urlresolvers import get_query_params
-from rest_framework.decorators import detail_route
+from sita.payments.utils import generate_payment
 
 
 class UserViewSet(
@@ -92,6 +93,110 @@ class UserViewSet(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    @detail_route(methods=['POST'])
+    def get_subscription(self, request, pk=None):
+        """
+        Change password from user
+        ---
+        omit_serializer: true
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              pytype: UserGetSubscription
+              paramType: body
+              description:
+                'password: <b>required</b> <br>
+                confirmPassword: <b>required</b>'
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
+        responseMessages:
+            - code: 400
+              message: BAD REQUEST
+            - code: 401
+              message: UNAUTHORIZED
+            - code: 404
+              message: NOT FOUND
+            - code: 200
+              message: OK
+            - code: 500
+              message: INTERNAL SERVER ERROR
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        """
+        # Verify if exits the user with pk
+        if User.objects.exists_user(pk=pk):
+            user = User.objects.get(id=pk)
+            print pk
+            # Verify if the user has permission to use
+            if has_permission(request.META, user):
+                serializer = UserGetSubscription(data=request.data)
+                if serializer.is_valid():
+                    if user.has_subscription == False:
+                        generate_payment(user, request.data.get("subscription_id"))
+                        return Response(status=status.HTTP_200_OK)
+                    return Response(
+                        {"message":"You already have a subscription"},status=422)
+                return Response(
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    @detail_route(methods=['PUT'])
+    def calcel_subscrition(self, request, pk=None):
+        """
+        Change password from user
+        ---
+        omit_serializer: true
+        omit_parameters:
+            - form
+        parameters:
+            - name: body
+              pytype: UserUpdatePasswordSerializer
+              paramType: body
+              description:
+                'password: <b>required</b> <br>
+                confirmPassword: <b>required</b>'
+            - name: Authorization
+              description: Bearer {token}.
+              required: true
+              type: string
+              paramType: header
+        responseMessages:
+            - code: 400
+              message: BAD REQUEST
+            - code: 401
+              message: UNAUTHORIZED
+            - code: 404
+              message: NOT FOUND
+            - code: 200
+              message: OK
+            - code: 500
+              message: INTERNAL SERVER ERROR
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        """
+        # Verify if exits the user with pk
+        if User.objects.exists_user(pk=pk):
+            user = User.objects.get(id=pk)
+            print pk
+            # Verify if the user has permission to use
+            if has_permission(request.META, user):
+                user.automatic_payment = False
+                user.save()
+                return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
     @detail_route(methods=['PUT'])
     def update_password(self, request, pk=None):

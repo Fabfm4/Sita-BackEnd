@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Subscription
 from django.contrib.auth import get_user_model
 
 class UserSerializer(serializers.Serializer):
@@ -105,6 +105,22 @@ class UserUpdatePasswordSerializer(serializers.Serializer):
 
         return data
 
+class UserGetSubscription(serializers.Serializer):
+    """"""
+    subscription_id = serializers.IntegerField(
+        required = True
+    )
+
+    def validate(self, data):
+        try:
+            subscription = Subscription.objects.get(id=data.get('subscription_id'))
+        except Subscription.DoesNotExist:
+            raise serializers.ValidationError(
+                {"subscription_id":"That subscription don't exists"}
+                )
+
+        return data
+
 class UserSerializerModel(serializers.ModelSerializer):
     """
     Serializer used to return the proper token, when the user was succesfully
@@ -124,4 +140,5 @@ class UserSerializerModel(serializers.ModelSerializer):
                 'reset_pass_code',
                 'phone',
                 'time_zone',
-                'conekta_customer', )
+                'conekta_customer',
+                'automatic_payment', )

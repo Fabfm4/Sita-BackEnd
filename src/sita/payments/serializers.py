@@ -46,4 +46,6 @@ class PaymentSerializerModel(serializers.ModelSerializer):
                 'currency' ,
                 'title_subscription' ,
                 'created_date',
+                'fail' ,
+                'subscription' ,
                 'user' )

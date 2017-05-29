@@ -203,10 +203,11 @@ class SignUpViewSet(viewsets.GenericViewSet):
                 password=request.data.get("password"),
                 time_zone=request.data.get("time_zone"),
                 conekta_customer=conekta_customer,
+                automatic_payment=False,
                 **kwards
             )
 
-            if customer is not None:
+            if conekta_customer != "":
                 card_data = {
                     "last_four":customer.payment_sources[0].last4,
                     "is_default":True,
@@ -232,6 +233,7 @@ class SignUpViewSet(viewsets.GenericViewSet):
                 )
                 subscription_user.save()
                 user.has_subscription = True
+                user.automatic_payment = True
                 user.save()
 
             device_token=request.data.get("device_token")
